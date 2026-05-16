@@ -8,22 +8,24 @@
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #f5f6fa;
+    --bg: #f0f4f1;
     --surface: #ffffff;
-    --border: #e8eaf0;
-    --text: #1a1d2e;
-    --muted: #7b8099;
-    --primary: #4f46e5;
-    --primary-light: #ede9fe;
+    --border: #e2e8e4;
+    --text: #1a2e1e;
+    --muted: #6b8072;
+    --primary: #16a34a;
+    --primary-dark: #1a3c34;
+    --primary-light: #dcfce7;
+    --primary-mid: #bbf7d0;
     --green: #16a34a;
     --green-light: #dcfce7;
     --yellow: #ca8a04;
     --yellow-light: #fef9c3;
     --red: #dc2626;
     --red-light: #fee2e2;
-    --gray-light: #f1f3f7;
-    --radius: 12px;
-    --shadow: 0 1px 4px rgba(0,0,0,.07), 0 4px 16px rgba(0,0,0,.05);
+    --gray-light: #f0f4f1;
+    --radius: 14px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.07);
   }
 
   body { font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
@@ -31,66 +33,110 @@
   /* ── Login ── */
   #login-screen {
     display: flex; align-items: center; justify-content: center;
-    min-height: 100vh; background: linear-gradient(135deg, #1a1d2e 0%, #2d2f45 100%);
+    min-height: 100vh;
+    background: linear-gradient(145deg, #0d2118 0%, #1a3c34 50%, #14532d 100%);
+    position: relative; overflow: hidden;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at 30% 20%, rgba(22,163,74,.25) 0%, transparent 60%),
+                radial-gradient(ellipse at 70% 80%, rgba(26,60,52,.4) 0%, transparent 60%);
   }
   .login-box {
-    background: var(--surface); border-radius: 20px; padding: 48px 40px;
-    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    position: relative; z-index: 1;
+    background: rgba(255,255,255,0.97);
+    backdrop-filter: blur(20px);
+    border-radius: 24px; padding: 52px 44px;
+    width: 100%; max-width: 400px;
+    box-shadow: 0 32px 80px rgba(0,0,0,.35), 0 0 0 1px rgba(255,255,255,.1);
     text-align: center;
   }
-  .login-logo { font-size: 28px; font-weight: 800; color: var(--primary); letter-spacing: -1px; margin-bottom: 6px; }
-  .login-sub  { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
+  .login-sun {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: linear-gradient(135deg, #16a34a, #1a3c34);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 30px; margin: 0 auto 20px;
+    box-shadow: 0 8px 24px rgba(22,163,74,.4);
+  }
+  .login-logo { font-size: 26px; font-weight: 800; color: var(--primary-dark); letter-spacing: -1px; margin-bottom: 4px; }
+  .login-sub  { color: var(--muted); font-size: 14px; margin-bottom: 36px; }
   .login-box input {
-    width: 100%; padding: 14px 16px; border: 1.5px solid var(--border);
-    border-radius: 10px; font-size: 15px; outline: none; margin-bottom: 14px;
-    transition: border-color .2s;
+    width: 100%; padding: 15px 18px; border: 2px solid var(--border);
+    border-radius: 12px; font-size: 15px; outline: none; margin-bottom: 14px;
+    transition: border-color .2s, box-shadow .2s; background: #fafafa;
   }
-  .login-box input:focus { border-color: var(--primary); }
+  .login-box input:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 4px rgba(22,163,74,.1); }
   .login-btn {
-    width: 100%; padding: 14px; background: var(--primary); color: #fff;
-    border: none; border-radius: 10px; font-size: 15px; font-weight: 600;
-    cursor: pointer; transition: opacity .2s;
+    width: 100%; padding: 15px; background: linear-gradient(135deg, #16a34a, #15803d);
+    color: #fff; border: none; border-radius: 12px; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: transform .15s, box-shadow .15s;
+    box-shadow: 0 4px 16px rgba(22,163,74,.35);
   }
-  .login-btn:hover { opacity: .9; }
-  .login-err { color: var(--red); font-size: 13px; margin-top: 10px; }
+  .login-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(22,163,74,.45); }
+  .login-btn:active { transform: translateY(0); }
+  .login-err { color: var(--red); font-size: 13px; margin-top: 12px; font-weight: 500; }
 
   /* ── App ── */
   #app { display: none; }
 
   .topbar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 16px 28px; display: flex; align-items: center; justify-content: space-between;
+    background: linear-gradient(135deg, #1a3c34 0%, #14532d 100%);
+    padding: 0 28px;
+    display: flex; align-items: center; justify-content: space-between;
     position: sticky; top: 0; z-index: 10;
+    height: 60px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.2);
   }
-  .topbar-brand { font-size: 18px; font-weight: 800; color: var(--primary); letter-spacing: -.5px; }
-  .topbar-right { display: flex; align-items: center; gap: 14px; }
+  .topbar-brand {
+    font-size: 17px; font-weight: 800; color: #ffffff;
+    letter-spacing: -.5px; display: flex; align-items: center; gap: 10px;
+  }
+  .topbar-brand-icon {
+    width: 32px; height: 32px; border-radius: 8px;
+    background: rgba(255,255,255,.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .topbar-right { display: flex; align-items: center; gap: 16px; }
   .live-badge {
-    display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted);
+    display: flex; align-items: center; gap: 7px;
+    background: rgba(255,255,255,.1); border-radius: 20px; padding: 5px 12px;
+    font-size: 12px; color: rgba(255,255,255,.8);
   }
-  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.5s infinite; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #4ade80; animation: pulse 1.5s infinite; flex-shrink: 0; }
   @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
-  .updated-at { font-size: 11px; color: var(--muted); }
+  .updated-at { font-size: 11px; color: rgba(255,255,255,.6); }
   .logout-btn {
-    font-size: 13px; color: var(--muted); background: none; border: 1px solid var(--border);
-    padding: 6px 14px; border-radius: 8px; cursor: pointer;
+    font-size: 13px; color: rgba(255,255,255,.8); background: rgba(255,255,255,.1);
+    border: 1px solid rgba(255,255,255,.2); padding: 6px 16px; border-radius: 8px;
+    cursor: pointer; transition: background .2s; font-weight: 500;
   }
+  .logout-btn:hover { background: rgba(255,255,255,.2); color: #fff; }
 
-  .main { padding: 28px; max-width: 1400px; margin: 0 auto; }
+  .main { padding: 28px; max-width: 1440px; margin: 0 auto; }
 
   /* ── KPI Cards ── */
   .kpi-grid {
-    display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-    gap: 16px; margin-bottom: 28px;
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 16px; margin-bottom: 24px;
   }
   .kpi {
     background: var(--surface); border-radius: var(--radius); padding: 22px 20px;
     box-shadow: var(--shadow); border: 1px solid var(--border);
+    position: relative; overflow: hidden; transition: transform .15s, box-shadow .15s;
   }
-  .kpi-label { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 10px; }
-  .kpi-value { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; }
+  .kpi:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,0,0,.1); }
+  .kpi::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
+    background: linear-gradient(90deg, #16a34a, #4ade80);
+    border-radius: var(--radius) var(--radius) 0 0;
+  }
+  .kpi-label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .6px; margin-bottom: 10px; }
+  .kpi-value { font-size: 28px; font-weight: 800; color: var(--text); letter-spacing: -1px; line-height: 1; }
   .kpi-value.green { color: var(--green); }
   .kpi-value.yellow { color: var(--yellow); }
-  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 6px; }
   .kpi-icon { font-size: 22px; margin-bottom: 10px; }
 
   /* ── Filters ── */
@@ -100,23 +146,26 @@
     margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end;
   }
   .filter-group { display: flex; flex-direction: column; gap: 5px; }
-  .filter-group label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
+  .filter-group label { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .4px; }
   .filter-group input,
   .filter-group select {
-    padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 8px;
-    font-size: 14px; outline: none; background: var(--bg); transition: border-color .2s;
-    min-width: 140px;
+    padding: 9px 12px; border: 2px solid var(--border); border-radius: 9px;
+    font-size: 14px; outline: none; background: var(--bg); transition: border-color .2s, box-shadow .2s;
+    min-width: 140px; color: var(--text);
   }
   .filter-group input:focus,
-  .filter-group select:focus { border-color: var(--primary); background: #fff; }
+  .filter-group select:focus { border-color: var(--primary); background: #fff; box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
   .filter-btn {
-    padding: 9px 20px; background: var(--primary); color: #fff; border: none;
-    border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer;
+    padding: 9px 22px; background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border: none;
+    border-radius: 9px; font-size: 14px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 2px 8px rgba(22,163,74,.3); transition: transform .15s;
   }
+  .filter-btn:hover { transform: translateY(-1px); }
   .filter-clear {
-    padding: 9px 16px; background: none; color: var(--muted); border: 1.5px solid var(--border);
-    border-radius: 8px; font-size: 14px; cursor: pointer;
+    padding: 9px 16px; background: none; color: var(--muted); border: 2px solid var(--border);
+    border-radius: 9px; font-size: 14px; cursor: pointer; font-weight: 500; transition: border-color .2s;
   }
+  .filter-clear:hover { border-color: var(--primary); color: var(--primary); }
 
   /* ── Table ── */
   .table-wrap {
@@ -124,73 +173,78 @@
     border: 1px solid var(--border); overflow: hidden;
   }
   .table-header {
-    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
     border-bottom: 1px solid var(--border);
+    background: linear-gradient(135deg, #f8fdf9, #f0f9f2);
   }
-  .table-title { font-size: 15px; font-weight: 700; color: var(--text); }
-  .table-count { font-size: 13px; color: var(--muted); background: var(--gray-light); padding: 3px 10px; border-radius: 20px; }
+  .table-title { font-size: 15px; font-weight: 800; color: var(--text); }
+  .table-count {
+    font-size: 12px; font-weight: 700; color: var(--primary);
+    background: var(--primary-light); padding: 4px 12px; border-radius: 20px;
+    border: 1px solid var(--primary-mid);
+  }
 
   .table-scroll { overflow-x: auto; }
   table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
   thead th {
-    text-align: left; padding: 12px 16px; font-size: 11px; font-weight: 700;
+    text-align: left; padding: 11px 16px; font-size: 11px; font-weight: 700;
     color: var(--muted); text-transform: uppercase; letter-spacing: .5px;
     background: var(--gray-light); border-bottom: 1px solid var(--border); white-space: nowrap;
   }
-  tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
+  tbody tr { border-bottom: 1px solid var(--border); transition: background .12s; }
   tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #fafbff; }
+  tbody tr:hover { background: #f6fdf8; }
   td { padding: 13px 16px; vertical-align: middle; }
   td.nowrap { white-space: nowrap; }
 
   .badge {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 20px; font-size: 11.5px; font-weight: 600;
+    padding: 4px 11px; border-radius: 20px; font-size: 11.5px; font-weight: 700;
   }
-  .badge-green  { background: var(--green-light); color: var(--green); }
-  .badge-yellow { background: var(--yellow-light); color: var(--yellow); }
-  .badge-red    { background: var(--red-light); color: var(--red); }
-  .badge-gray   { background: var(--gray-light); color: var(--muted); }
+  .badge-green  { background: var(--green-light); color: var(--green); border: 1px solid #bbf7d0; }
+  .badge-yellow { background: var(--yellow-light); color: var(--yellow); border: 1px solid #fde68a; }
+  .badge-red    { background: var(--red-light); color: var(--red); border: 1px solid #fca5a5; }
+  .badge-gray   { background: var(--gray-light); color: var(--muted); border: 1px solid var(--border); }
 
   .method-badge {
     display: inline-flex; align-items: center; gap: 5px;
-    padding: 3px 10px; border-radius: 6px; font-size: 11.5px; font-weight: 600;
+    padding: 4px 11px; border-radius: 7px; font-size: 11.5px; font-weight: 700;
   }
-  .method-pix    { background: #e0f2fe; color: #0369a1; }
-  .method-card   { background: #f3e8ff; color: #7c3aed; }
+  .method-pix    { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+  .method-card   { background: #f3e8ff; color: #7c3aed; border: 1px solid #ddd6fe; }
 
-  .customer-name { font-weight: 600; color: var(--text); }
-  .customer-email { font-size: 12px; color: var(--muted); }
+  .customer-name { font-weight: 700; color: var(--text); }
+  .customer-email { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-  .price { font-weight: 700; color: var(--text); }
+  .price { font-weight: 800; color: var(--primary-dark); }
 
   /* ── Pagination ── */
   .pagination {
-    padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
-    border-top: 1px solid var(--border);
+    padding: 16px 22px; display: flex; align-items: center; justify-content: space-between;
+    border-top: 1px solid var(--border); background: var(--gray-light);
   }
-  .pagination-info { font-size: 13px; color: var(--muted); }
+  .pagination-info { font-size: 13px; color: var(--muted); font-weight: 500; }
   .pagination-btns { display: flex; gap: 6px; }
   .page-btn {
-    padding: 6px 14px; border: 1.5px solid var(--border); border-radius: 7px;
-    font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface);
+    padding: 7px 14px; border: 2px solid var(--border); border-radius: 8px;
+    font-size: 13px; font-weight: 700; cursor: pointer; background: var(--surface);
     color: var(--text); transition: all .15s;
   }
   .page-btn:hover { border-color: var(--primary); color: var(--primary); }
-  .page-btn.active { background: var(--primary); color: #fff; border-color: var(--primary); }
-  .page-btn:disabled { opacity: .4; cursor: not-allowed; }
+  .page-btn.active { background: linear-gradient(135deg, #16a34a, #15803d); color: #fff; border-color: transparent; box-shadow: 0 2px 8px rgba(22,163,74,.3); }
+  .page-btn:disabled { opacity: .35; cursor: not-allowed; }
 
   /* ── Loading / Empty ── */
-  .loading-row td { text-align: center; padding: 48px; color: var(--muted); font-size: 15px; }
+  .loading-row td { text-align: center; padding: 56px; color: var(--muted); font-size: 15px; }
   .spinner {
-    width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--primary);
-    border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 12px;
+    width: 30px; height: 30px; border: 3px solid var(--primary-light); border-top-color: var(--primary);
+    border-radius: 50%; animation: spin .7s linear infinite; margin: 0 auto 14px;
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
   @media (max-width: 640px) {
-    .main { padding: 16px; }
-    .topbar { padding: 14px 16px; }
+    .main { padding: 14px; }
+    .topbar { padding: 0 16px; }
     .kpi-value { font-size: 22px; }
     .filters { flex-direction: column; }
     .filter-group input, .filter-group select { min-width: unset; width: 100%; }
@@ -202,7 +256,8 @@
 <!-- ── LOGIN ── -->
 <div id="login-screen">
   <div class="login-box">
-    <div class="login-logo">☀ Solare</div>
+    <div class="login-sun">☀</div>
+    <div class="login-logo">Solare</div>
     <div class="login-sub">Painel administrativo</div>
     <input type="password" id="pwd-input" placeholder="Senha de acesso" autocomplete="current-password">
     <button class="login-btn" onclick="doLogin()">Entrar</button>
@@ -213,7 +268,10 @@
 <!-- ── APP ── -->
 <div id="app">
   <div class="topbar">
-    <div class="topbar-brand">☀ Solare — Dashboard</div>
+    <div class="topbar-brand">
+      <div class="topbar-brand-icon">☀</div>
+      Solare — Dashboard
+    </div>
     <div class="topbar-right">
       <div class="live-badge">
         <span class="dot"></span>
@@ -232,7 +290,7 @@
       <div class="kpi"><div class="kpi-icon">💰</div><div class="kpi-label">Total Faturado</div><div class="kpi-value green" id="s-faturado">—</div><div class="kpi-sub" id="s-faturado-sub">pedidos aprovados</div></div>
       <div class="kpi"><div class="kpi-icon">📅</div><div class="kpi-label" id="s-periodo-label">Faturado Hoje</div><div class="kpi-value green" id="s-hoje">—</div><div class="kpi-sub" id="s-hoje-sub">— aprovados</div></div>
       <div class="kpi"><div class="kpi-icon">💳</div><div class="kpi-label">Cartão Aprovado</div><div class="kpi-value" id="s-cartao">—</div><div class="kpi-sub">vendas no cartão</div></div>
-      <div class="kpi"><div class="kpi-icon">🔵</div><div class="kpi-label">Pix Aprovado</div><div class="kpi-value" id="s-pix-ok">—</div><div class="kpi-sub">vendas no Pix</div></div>
+      <div class="kpi"><div class="kpi-icon">🟢</div><div class="kpi-label">Pix Aprovado</div><div class="kpi-value" id="s-pix-ok">—</div><div class="kpi-sub">vendas no Pix</div></div>
     </div>
 
     <!-- Filters -->
@@ -269,9 +327,9 @@
       </div>
       <button class="filter-btn" onclick="applyFilters()">Filtrar</button>
       <button class="filter-clear" onclick="clearFilters()">Limpar</button>
-      <button class="filter-clear" id="sync-btn" onclick="syncPending()" style="border-color:#ca8a04;color:#ca8a04">⟳ Sincronizar pendentes</button>
+      <button class="filter-clear" id="sync-btn" onclick="syncPending()" style="border-color:#ca8a04;color:#ca8a04;font-weight:600">⟳ Sincronizar pendentes</button>
     </div>
-    <div id="sync-msg" style="font-size:13px;color:var(--green);margin-top:-8px;margin-bottom:4px;display:none"></div>
+    <div id="sync-msg" style="font-size:13px;color:var(--green);margin-top:-8px;margin-bottom:8px;display:none;font-weight:500"></div>
 
     <!-- Table -->
     <div class="table-wrap">
@@ -385,7 +443,6 @@
       search: document.getElementById('f-search').value,
     });
 
-    // Primeiro carregamento: mostra spinner
     if (firstLoad) {
       document.getElementById('orders-body').innerHTML =
         '<tr class="loading-row"><td colspan="12"><div class="spinner"></div>Carregando...</td></tr>';
@@ -404,9 +461,8 @@
         return;
       }
 
-      // Detecta mudança: compara total + created_at do primeiro pedido
       const sig = `${data.total}|${data.orders?.[0]?.created_at || ''}|${data.stats?.total_pagos}`;
-      if (!force && sig === lastSignature) return; // sem mudança, não re-renderiza
+      if (!force && sig === lastSignature) return;
       lastSignature = sig;
 
       renderKpis(data.stats, data.hasFilters);
@@ -415,7 +471,6 @@
       totalPages = data.totalPages;
       firstLoad  = false;
 
-      // Atualiza horário discreto
       const now = new Date();
       document.getElementById('updated-at').textContent =
         'atualizado ' + now.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -435,7 +490,6 @@
 
   function renderKpis(s, hasFilters) {
     const periodoLabel = s.periodo_label || 'Hoje';
-    const isTodayOnly  = periodoLabel === 'Hoje';
 
     document.getElementById('s-total').textContent        = s.total_pedidos;
     document.getElementById('s-total-sub').textContent    = hasFilters ? periodoLabel : 'período selecionado';
@@ -445,7 +499,6 @@
     document.getElementById('s-faturado').textContent     = fmt(s.total_faturado);
     document.getElementById('s-faturado-sub').textContent = hasFilters ? periodoLabel : 'todos aprovados';
 
-    // Card "período" — Hoje quando sem filtro, período filtrado quando com filtro
     document.getElementById('s-periodo-label').textContent = hasFilters ? `Faturado — ${periodoLabel}` : 'Faturado Hoje';
     document.getElementById('s-hoje').textContent          = fmt(s.faturado_periodo);
     document.getElementById('s-hoje-sub').textContent      = `${s.pagos_periodo} aprovados`;
@@ -472,7 +525,7 @@
       if (data.updated > 0) {
         msg.style.color = 'var(--green)';
         msg.textContent = `✅ ${data.updated} pedido(s) atualizado(s) de ${data.total} pendentes verificados.`;
-        lastSignature = ''; // força re-render
+        lastSignature = '';
         loadData(true);
       } else {
         msg.style.color = 'var(--muted)';
@@ -548,16 +601,16 @@
         <td>${statusBadge(o.status)}</td>
         <td style="text-align:center">
           ${o.order_placed
-            ? `<span style="color:#16a34a;font-size:18px;font-weight:700" title="Pedido feito">✅</span>`
-            : `<button onclick="markPlaced('${o.id}', this)" style="background:#f0fdf4;border:1.5px solid #16a34a;color:#16a34a;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Marcar feito</button>`
+            ? `<span style="color:#16a34a;font-size:18px" title="Pedido feito">✅</span>`
+            : `<button onclick="markPlaced('${o.id}', this)" style="background:#f0fdf4;border:2px solid #16a34a;color:#16a34a;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;transition:all .15s">Marcar feito</button>`
           }
         </td>
         <td style="min-width:170px">
           ${o.tracking_code
-            ? `<div style="font-size:12px;font-weight:700;color:#1a1d2e;background:#f0fdf4;border-radius:8px;padding:6px 10px;text-align:center">${esc(o.tracking_code)}<br><span style="font-size:11px;color:#16a34a;font-weight:400">✅ Enviado</span></div>`
+            ? `<div style="font-size:12px;font-weight:700;color:#1a3c34;background:#f0fdf4;border-radius:8px;padding:6px 10px;text-align:center;border:1px solid #bbf7d0">${esc(o.tracking_code)}<br><span style="font-size:11px;color:#16a34a;font-weight:500">✅ Enviado</span></div>`
             : `<div style="display:flex;gap:4px;align-items:center">
-                <input id="track-${o.id}" type="text" placeholder="Código..." style="flex:1;min-width:0;padding:6px 8px;border:1.5px solid #e8eaf0;border-radius:8px;font-size:12px;outline:none">
-                <button onclick="sendTracking('${o.id}', this)" style="background:#4f46e5;color:#fff;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap">Enviar</button>
+                <input id="track-${o.id}" type="text" placeholder="Código..." style="flex:1;min-width:0;padding:6px 8px;border:2px solid #e2e8e4;border-radius:8px;font-size:12px;outline:none">
+                <button onclick="sendTracking('${o.id}', this)" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:7px 12px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">Enviar</button>
               </div>`
           }
         </td>
@@ -586,7 +639,6 @@
     const to   = Math.min(page * pageSize, total);
     info.textContent = `Mostrando ${from}–${to} de ${total}`;
 
-    // Build page buttons (max 7 shown)
     let html = `<button class="page-btn" onclick="goPage(${page-1})" ${page <= 1 ? 'disabled' : ''}>‹</button>`;
     const range = [];
     for (let i = Math.max(1, page-2); i <= Math.min(pages, page+2); i++) range.push(i);
@@ -616,7 +668,7 @@
       });
       if (res.ok) {
         const td = btn.closest('td');
-        td.innerHTML = '<span style="color:#16a34a;font-size:18px;font-weight:700" title="Pedido feito">✅</span>';
+        td.innerHTML = '<span style="color:#16a34a;font-size:18px" title="Pedido feito">✅</span>';
       } else {
         btn.disabled = false;
         btn.textContent = 'Marcar feito';
@@ -643,7 +695,7 @@
       });
       if (res.ok) {
         const td = btn.closest('td');
-        td.innerHTML = `<div style="font-size:12px;font-weight:700;color:#1a1d2e;background:#f0fdf4;border-radius:8px;padding:6px 10px;text-align:center">${code}<br><span style="font-size:11px;color:#16a34a;font-weight:400">✅ Enviado</span></div>`;
+        td.innerHTML = `<div style="font-size:12px;font-weight:700;color:#1a3c34;background:#f0fdf4;border-radius:8px;padding:6px 10px;text-align:center;border:1px solid #bbf7d0">${code}<br><span style="font-size:11px;color:#16a34a;font-weight:500">✅ Enviado</span></div>`;
       } else {
         const data = await res.json();
         btn.disabled = false;
