@@ -125,7 +125,7 @@ export default async function handler(req, res) {
         const addr = order.customer_address || {};
         sendMetaEvent({
           eventName: 'Purchase',
-          eventSourceUrl: 'https://lojassolare.com.br/obrigado.html',
+          eventSourceUrl: `${process.env.SITE_URL}/obrigado.html`,
           userData: {
             email: order.customer_email,
             phone: order.customer_phone,

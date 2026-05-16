@@ -166,7 +166,7 @@ export default async function handler(req, res) {
     if (isPix || paymentStatus === 'approved') {
       sendMetaEvent({
         eventName:      'Purchase',
-        eventSourceUrl: 'https://lojassolare.com.br/obrigado.html',
+        eventSourceUrl: `${process.env.SITE_URL}/obrigado.html`,
         userData: {
           email:     customerEmail,
           phone:     customerPhone,

@@ -16,8 +16,10 @@ function escapeHtml(str) {
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID;
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN;
 const TWILIO_PHONE_FROM = process.env.TWILIO_PHONE_FROM;
-const FROM_EMAIL = process.env.FROM_EMAIL || 'pedidos@lojassolare.com.br';
-const WHATSAPP_NUMBER = '21975605337';
+const FROM_EMAIL = process.env.FROM_EMAIL || '';
+const SITE_URL = process.env.SITE_URL || '';
+const SITE_HOSTNAME = SITE_URL.replace(/^https?:\/\//, '');
+const WHATSAPP_NUMBER = process.env.WHATSAPP_NUMBER || '';
 
 // ─────────────────────────────────────────────
 // Email Templates
@@ -36,7 +38,7 @@ function approvedEmailHTML({ customerName, totalPrice, shippingMethod, orderId }
         <!-- Header -->
         <tr><td style="background:#1a3c34;padding:32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;letter-spacing:-0.5px;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <!-- Confirmed Badge -->
@@ -86,7 +88,7 @@ function approvedEmailHTML({ customerName, totalPrice, shippingMethod, orderId }
             Você receberá uma atualização assim que seu pedido for enviado.
             Em caso de dúvidas, entre em contato conosco.
           </p>
-          <p style="color:#9ca3af;font-size:12px;margin:0;">© 2025 Solare · lojassolare.com.br</p>
+          <p style="color:#9ca3af;font-size:12px;margin:0;">© 2025 Solare · ${SITE_HOSTNAME}</p>
         </td></tr>
 
       </table>
@@ -108,7 +110,7 @@ function orderPreparingEmailHTML({ customerName, orderId }) {
 
         <tr><td style="background:#1a3c34;padding:32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -127,7 +129,7 @@ function orderPreparingEmailHTML({ customerName, orderId }) {
 
         <tr><td style="padding:0 40px 40px;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6;">
-            © 2025 Solare · lojassolare.com.br
+            © 2025 Solare · ${SITE_HOSTNAME}
           </p>
         </td></tr>
 
@@ -150,7 +152,7 @@ function orderShippingEmailHTML({ customerName, orderId }) {
 
         <tr><td style="background:#1a3c34;padding:32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -170,7 +172,7 @@ function orderShippingEmailHTML({ customerName, orderId }) {
 
         <tr><td style="padding:0 40px 40px;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6;">
-            © 2025 Solare · lojassolare.com.br
+            © 2025 Solare · ${SITE_HOSTNAME}
           </p>
         </td></tr>
 
@@ -193,7 +195,7 @@ function pixExpiredEmailHTML({ customerName }) {
 
         <tr><td style="background:#1a3c34;padding:32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -203,14 +205,14 @@ function pixExpiredEmailHTML({ customerName }) {
             O código Pix gerado expirou sem pagamento confirmado.
             Mas fique tranquilo — seus produtos continuam disponíveis!
           </p>
-          <a href="https://lojassolare.com.br"
+          <a href="${SITE_URL}"
              style="display:inline-block;background:#4CAF50;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;">
             Finalizar Compra Novamente
           </a>
         </td></tr>
 
         <tr><td style="padding:0 40px 40px;text-align:center;">
-          <p style="color:#9ca3af;font-size:12px;margin:0;">© 2025 Solare · lojassolare.com.br</p>
+          <p style="color:#9ca3af;font-size:12px;margin:0;">© 2025 Solare · ${SITE_HOSTNAME}</p>
         </td></tr>
 
       </table>
@@ -232,7 +234,7 @@ function pixReminderEmailHTML({ customerName, pixCode }) {
 
         <tr><td style="background:#1a3c34;padding:28px 32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -250,7 +252,7 @@ function pixReminderEmailHTML({ customerName, pixCode }) {
             ${pixCode}
           </div>
           ` : ''}
-          <a href="https://lojassolare.com.br"
+          <a href="${SITE_URL}"
              style="display:inline-block;background:#4CAF50;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;">
             Pagar Agora
           </a>
@@ -259,7 +261,7 @@ function pixReminderEmailHTML({ customerName, pixCode }) {
         <tr><td style="padding:0 40px 32px;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6;">
             Se você já realizou o pagamento, por favor ignore este e-mail.<br>
-            © 2025 Solare · lojassolare.com.br
+            © 2025 Solare · ${SITE_HOSTNAME}
           </p>
         </td></tr>
 
@@ -282,7 +284,7 @@ function pixReminder2hEmailHTML({ customerName }) {
 
         <tr><td style="background:#1a3c34;padding:28px 32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -294,7 +296,7 @@ function pixReminder2hEmailHTML({ customerName }) {
             Você demonstrou interesse na nossa <strong>Luminária Solar Solare</strong> mas ainda não finalizou o pagamento.
             Não deixe ela escapar! O estoque é limitado e a promoção pode acabar a qualquer momento.
           </p>
-          <a href="https://lojassolare.com.br"
+          <a href="${SITE_URL}"
              style="display:inline-block;background:#4CAF50;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;">
             Garantir Meu Pedido Agora
           </a>
@@ -303,7 +305,7 @@ function pixReminder2hEmailHTML({ customerName }) {
         <tr><td style="padding:0 40px 32px;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6;">
             Se você já realizou o pagamento, por favor ignore este e-mail.<br>
-            © 2025 Solare · lojassolare.com.br
+            © 2025 Solare · ${SITE_HOSTNAME}
           </p>
         </td></tr>
 
@@ -326,7 +328,7 @@ function pixReminder4hEmailHTML({ customerName }) {
 
         <tr><td style="background:#b91c1c;padding:28px 32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:20px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.8);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
 
         <tr><td style="padding:32px 40px;text-align:center;">
@@ -341,7 +343,7 @@ function pixReminder4hEmailHTML({ customerName }) {
             <p style="margin:0;color:#b91c1c;font-weight:700;font-size:15px;">⚠️ Estoque muito limitado</p>
             <p style="margin:8px 0 0;color:#6b7280;font-size:14px;">Não garantimos a disponibilidade por mais tempo.</p>
           </div>
-          <a href="https://lojassolare.com.br"
+          <a href="${SITE_URL}"
              style="display:inline-block;background:#b91c1c;color:#ffffff;text-decoration:none;padding:14px 32px;border-radius:8px;font-weight:700;font-size:15px;">
             Aproveitar Promoção Antes que Acabe
           </a>
@@ -350,7 +352,7 @@ function pixReminder4hEmailHTML({ customerName }) {
         <tr><td style="padding:0 40px 32px;text-align:center;">
           <p style="color:#9ca3af;font-size:12px;margin:0;line-height:1.6;">
             Se você já realizou o pagamento, por favor ignore este e-mail.<br>
-            © 2025 Solare · lojassolare.com.br
+            © 2025 Solare · ${SITE_HOSTNAME}
           </p>
         </td></tr>
 
@@ -565,7 +567,7 @@ export async function sendTrackingEmail({ to, customerName, trackingCode, totalP
       <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.07);">
         <tr><td style="background:#1a3c34;padding:32px;text-align:center;">
           <h1 style="color:#ffffff;margin:0;font-size:22px;font-weight:700;">🌞 Solare</h1>
-          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">lojassolare.com.br</p>
+          <p style="color:rgba(255,255,255,0.7);margin:6px 0 0;font-size:13px;">${SITE_HOSTNAME}</p>
         </td></tr>
         <tr><td style="padding:40px 40px 32px;">
           <h2 style="font-size:20px;font-weight:700;color:#1a1d2e;margin:0 0 8px;">🚚 Seu pedido está a caminho!</h2>
@@ -588,7 +590,7 @@ export async function sendTrackingEmail({ to, customerName, trackingCode, totalP
           <a href="https://wa.me/5521975605337" style="display:inline-block;background:#25d366;color:#ffffff;text-decoration:none;padding:14px 28px;border-radius:10px;font-weight:700;font-size:15px;">💬 Falar no WhatsApp</a>
         </td></tr>
         <tr><td style="background:#f9fafb;padding:24px;text-align:center;border-top:1px solid #e5e7eb;">
-          <p style="margin:0;font-size:12px;color:#9ca3af;">Solare — lojassolare.com.br</p>
+          <p style="margin:0;font-size:12px;color:#9ca3af;">Solare — ${SITE_HOSTNAME}</p>
         </td></tr>
       </table>
     </td></tr>

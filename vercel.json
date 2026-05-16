@@ -3,7 +3,7 @@
     {
       "source": "/api/(.*)",
       "headers": [
-        { "key": "Access-Control-Allow-Origin", "value": "https://lojassolare.com.br" },
+        { "key": "Access-Control-Allow-Origin", "value": "SEU_DOMINIO_AQUI" },
         { "key": "Access-Control-Allow-Methods", "value": "GET, POST, OPTIONS" },
         { "key": "Access-Control-Allow-Headers", "value": "Content-Type" }
       ]

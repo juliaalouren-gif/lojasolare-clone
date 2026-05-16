@@ -34,7 +34,7 @@ export async function sendMetaEvent({
         event_name: eventName,
         event_time: Math.floor(Date.now() / 1000),
         action_source: 'website',
-        event_source_url: eventSourceUrl || 'https://lojassolare.com.br',
+        event_source_url: eventSourceUrl || process.env.SITE_URL || '',
         ...(eventId && { event_id: eventId }),
         user_data: {
           ...(userData.email && { em: hash(userData.email) }),
