@@ -328,6 +328,7 @@
       <button class="filter-btn" onclick="applyFilters()">Filtrar</button>
       <button class="filter-clear" onclick="clearFilters()">Limpar</button>
       <button class="filter-clear" id="sync-btn" onclick="syncPending()" style="border-color:#ca8a04;color:#ca8a04;font-weight:600">⟳ Sincronizar pendentes</button>
+      <button class="filter-clear" onclick="exportCsv()" style="border-color:#16a34a;color:#16a34a;font-weight:600">⬇ Exportar CSV</button>
     </div>
     <div id="sync-msg" style="font-size:13px;color:var(--green);margin-top:-8px;margin-bottom:8px;display:none;font-weight:500"></div>
 
@@ -654,6 +655,19 @@
     currentPage = p;
     loadData();
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // ── Exportar CSV ──────────────────────────────────────────────
+  function exportCsv() {
+    const params = new URLSearchParams({
+      password,
+      from:   document.getElementById('f-from').value,
+      to:     document.getElementById('f-to').value,
+      status: document.getElementById('f-status').value,
+      method: document.getElementById('f-method').value,
+      search: document.getElementById('f-search').value,
+    });
+    window.location.href = `/api/export-csv?${params}`;
   }
 
   // ── Marcar pedido como feito ──────────────────────────────────

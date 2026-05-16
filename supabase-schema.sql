@@ -29,6 +29,10 @@ CREATE TABLE IF NOT EXISTS orders (
   pix_qr_code TEXT,
   pix_qr_code_base64 TEXT,
 
+  -- Dashboard
+  order_placed BOOLEAN DEFAULT false,
+  tracking_code TEXT,
+
   -- Upsell (1-click card charge)
   mp_customer_id TEXT,
   mp_card_id TEXT,
