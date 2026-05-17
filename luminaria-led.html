@@ -333,14 +333,19 @@
             </div>
 
             <!-- Trio de vídeos — full width, fora do container -->
-            <div style="display:flex;gap:8px;padding:0 12px;margin:32px 0;box-sizing:border-box;width:100%;">
-                <video style="flex:1;min-width:0;border-radius:10px;object-fit:cover;aspect-ratio:9/16;background:#000;" autoplay loop muted playsinline>
+            <style>
+                .video-trio { display:flex; gap:8px; padding:0 12px; margin:32px 0; width:100%; box-sizing:border-box; }
+                .video-trio video { flex:1; min-width:0; border-radius:10px; object-fit:cover; background:#000; height:520px; }
+                @media(max-width:600px){ .video-trio video { height:360px; } }
+            </style>
+            <div class="video-trio">
+                <video autoplay loop muted playsinline>
                     <source src="spotluled.mp4" type="video/mp4">
                 </video>
-                <video style="flex:1;min-width:0;border-radius:10px;object-fit:cover;aspect-ratio:9/16;background:#000;" autoplay loop muted playsinline>
+                <video autoplay loop muted playsinline>
                     <source src="sspo.mp4" type="video/mp4">
                 </video>
-                <video style="flex:1;min-width:0;border-radius:10px;object-fit:cover;aspect-ratio:9/16;background:#000;" autoplay loop muted playsinline>
+                <video autoplay loop muted playsinline>
                     <source src="sspot.mp4" type="video/mp4">
                 </video>
             </div>
