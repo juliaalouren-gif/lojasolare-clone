@@ -766,5 +766,30 @@
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
     <script src="script.js?v=1.8" defer></script>
+    <script>
+    // Imagens por cor para o produto LED (sobrescreve script.js)
+    const LED_IMAGES = {
+        warm: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg',
+        white: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPv01_13896dd0-ba98-426d-a9f1-2ffea4004abc_1024x.jpg'
+    };
+    window.addEventListener('DOMContentLoaded', function() {
+        const origSelectVariant = window.selectVariant;
+        window.selectVariant = function(element, type) {
+            const parent = element.parentElement;
+            parent.querySelectorAll('.variant-btn').forEach(btn => btn.classList.remove('active'));
+            element.classList.add('active');
+            if (type === 'light') {
+                const val = element.getAttribute('data-value');
+                window.currentSelectedLight = val;
+                const src = LED_IMAGES[val] || LED_IMAGES.warm;
+                const mainImg = document.getElementById('variant-image');
+                if (mainImg) mainImg.src = src;
+                document.querySelectorAll('.thumb').forEach(t => t.classList.remove('active'));
+                const matchThumb = Array.from(document.querySelectorAll('.thumb')).find(t => t.src === src);
+                if (matchThumb) matchThumb.classList.add('active');
+            }
+        };
+    });
+    </script>
 </body>
 </html>
