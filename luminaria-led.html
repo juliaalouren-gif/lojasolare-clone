@@ -781,6 +781,30 @@
         warm: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg',
         white: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg'
     };
+    // Override handleCheckout to pass product=led to checkout
+    window.handleCheckout = function() {
+        const activeLight = document.querySelector('.variant-btn.active[data-value]');
+        if (activeLight) window.currentSelectedLight = activeLight.getAttribute('data-value');
+        if (typeof fbq !== 'undefined') {
+            fbq('track', 'AddToCart', {
+                content_name: 'Luminária LED Sem Fio Solare',
+                content_ids: ['solare-luminaria-led'],
+                content_type: 'product',
+                value: window.currentSelectedPrice,
+                currency: 'BRL',
+                num_items: window.currentSelectedQty,
+            });
+        }
+        const params = new URLSearchParams({
+            qty: window.currentSelectedQty,
+            price: window.currentSelectedPrice,
+            oldPrice: window.currentSelectedOldPrice,
+            light: window.currentSelectedLight,
+            product: 'led',
+        });
+        window.location.href = 'checkout.html?' + params.toString();
+    };
+
     window.addEventListener('DOMContentLoaded', function() {
         const origSelectVariant = window.selectVariant;
         window.selectVariant = function(element, type) {
