@@ -56,6 +56,10 @@ let currentSelectedPrice = 78.90;
 let currentSelectedQty = 2;
 let currentSelectedOldPrice = 129.90;
 let currentSelectedLight = 'warm';
+window.currentSelectedPrice = currentSelectedPrice;
+window.currentSelectedQty = currentSelectedQty;
+window.currentSelectedOldPrice = currentSelectedOldPrice;
+window.currentSelectedLight = currentSelectedLight;
 
 // Kit selection state
 let currentKitBaseQty = 2;
@@ -97,6 +101,9 @@ window.updatePricing = function(qty, price, oldPrice, element) {
     currentSelectedPrice = price;
     currentSelectedQty = qty;
     currentSelectedOldPrice = oldPrice;
+    window.currentSelectedPrice = price;
+    window.currentSelectedQty = qty;
+    window.currentSelectedOldPrice = oldPrice;
 
     // Update UI active state for cards
     document.querySelectorAll('.qty-card').forEach(card => {
@@ -164,6 +171,9 @@ function applyKitPricing() {
     currentSelectedQty = totalQty;
     currentSelectedPrice = totalPrice;
     currentSelectedOldPrice = totalOldPrice;
+    window.currentSelectedQty = totalQty;
+    window.currentSelectedPrice = totalPrice;
+    window.currentSelectedOldPrice = totalOldPrice;
 
     const savings = totalOldPrice - totalPrice;
     const discountPercent = Math.round((savings / totalOldPrice) * 100);
