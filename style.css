@@ -1416,30 +1416,47 @@ footer {
 
     .pix-row {
         flex-direction: row !important;
-        padding: 12px !important;
+        padding: 10px 14px !important;
         width: 100% !important;
+        box-sizing: border-box !important;
         display: flex !important;
         align-items: center !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
     }
 
     .pix-icon {
-        width: 38px !important;
+        width: 32px !important;
         height: auto !important;
         display: block !important;
-        margin-right: 8px !important;
+        flex-shrink: 0 !important;
+    }
+
+    .pix-content {
+        flex: 1 !important;
+        min-width: 0 !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+        gap: 6px !important;
+        flex-wrap: wrap !important;
     }
 
     .pix-text {
-        font-size: 0.7rem !important;
+        font-size: 0.78rem !important;
+        white-space: normal !important;
+        flex-wrap: wrap !important;
+        gap: 4px !important;
     }
 
     .pix-text strong {
-        font-size: 0.95rem !important;
+        font-size: 1rem !important;
     }
 
     .pix-badge {
-        font-size: 0.65rem !important;
-        padding: 3px 6px !important;
+        font-size: 0.72rem !important;
+        padding: 3px 7px !important;
+        flex-shrink: 0 !important;
     }
 
     .checkout-box {
