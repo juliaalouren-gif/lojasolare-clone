@@ -102,9 +102,8 @@ export default async function handler(req, res) {
 
     if (!mpResponse.ok) {
       console.error('[MP Error]', JSON.stringify(mpResult));
-      const errMsg = mpResult?.message
-        || mpResult?.cause?.[0]?.description
-        || 'Erro no processamento.';
+      const rawMsg = mpResult?.message || mpResult?.cause?.[0]?.description || 'Erro no processamento.';
+      const errMsg = String(rawMsg).replace(/null$/i, '').trim();
       return res.status(400).json({ error: errMsg, details: mpResult });
     }
 
