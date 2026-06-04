@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } from './send-notification.js';
 import { sendMetaEvent } from './meta-capi.js';
+import { sendWhatsApp } from './whatsapp.js';
 import crypto from 'crypto';
 
 function verifyMpSignature(req) {
@@ -103,9 +104,25 @@ export default async function handler(req, res) {
       return res.status(500).end();
     }
 
+    // Mark lead as converted so abandonment message is not sent
+    if (order?.customer_phone) {
+      supabase.from('leads')
+        .update({ converted: true })
+        .eq('phone', String(order.customer_phone).replace(/\D/g, ''))
+        .catch(() => {});
+    }
+
     // Send notifications based on status
     if (order) {
       if (newStatus === 'approved') {
+        const firstName = (order.customer_name || '').trim().split(' ')[0];
+        sendWhatsApp(order.customer_phone,
+          `🎉 Pagamento confirmado, ${firstName}!\n\n` +
+          `Seu pedido está certinho com a Solare e logo será preparado para entrega. ` +
+          `Obrigado pela confiança! 💚\n\n` +
+          `Qualquer dúvida é só chamar aqui no WhatsApp.`
+        ).catch(() => {});
+
         await notifyPaymentApproved({
           customerName: order.customer_name,
           customerEmail: order.customer_email,
@@ -147,10 +164,26 @@ export default async function handler(req, res) {
           eventId: `purchase-${paymentId}`,
         }).catch(e => console.error('Meta CAPI Purchase (webhook) failed:', e));
       } else if (newStatus === 'cancelled') {
+        const firstName = (order.customer_name || '').trim().split(' ')[0];
+        sendWhatsApp(order.customer_phone,
+          `😔 Oi ${firstName}, seu PIX expirou sem ser pago.\n\n` +
+          `Mas não se preocupe! Você pode fazer um novo pedido quando quiser:\n` +
+          `🔗 ${process.env.SITE_URL || 'https://www.solarelojas.com.br'}\n\n` +
+          `Qualquer dúvida estamos aqui! 💚`
+        ).catch(() => {});
+
         await notifyPixExpired({
           customerName: order.customer_name,
           customerEmail: order.customer_email,
         });
+      } else if (newStatus === 'rejected') {
+        const firstName = (order.customer_name || '').trim().split(' ')[0];
+        sendWhatsApp(order.customer_phone,
+          `Oi ${firstName}! Infelizmente seu cartão foi recusado. 😕\n\n` +
+          `Que tal tentar novamente com outro cartão ou pagar via PIX? ` +
+          `No PIX você ainda ganha 5% de desconto! 💰\n\n` +
+          `🔗 ${process.env.SITE_URL || 'https://www.solarelojas.com.br'}`
+        ).catch(() => {});
       }
     }
 

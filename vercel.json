@@ -1,4 +1,10 @@
 {
+  "crons": [
+    {
+      "path": "/api/check-abandoned",
+      "schedule": "*/30 * * * *"
+    }
+  ],
   "headers": [
     {
       "source": "/api/(.*)",

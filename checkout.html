@@ -1366,6 +1366,17 @@
                         num_items: qty,
                     });
                 }
+                // Save lead for abandonment recovery
+                const leadName  = document.getElementById('cust-name')?.value || '';
+                const leadPhone = document.getElementById('cust-phone')?.value || '';
+                const leadEmail = document.getElementById('cust-email')?.value || '';
+                if (leadName && leadPhone) {
+                    fetch('/api/save-lead', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: leadName, phone: leadPhone, email: leadEmail, price, qty }),
+                    }).catch(() => {});
+                }
             }
             setTimeout(() => {
                 document.getElementById(`step-${next}`).scrollIntoView({ behavior: 'smooth', block: 'start' });

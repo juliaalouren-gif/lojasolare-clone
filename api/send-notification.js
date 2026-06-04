@@ -1,7 +1,8 @@
 /**
  * Notification helper for Solare Checkout
- * Sends emails via Resend and SMS via Twilio
+ * Sends emails via Resend and WhatsApp via Z-API
  */
+import { sendWhatsApp } from './whatsapp.js';
 
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 
@@ -509,7 +510,17 @@ export async function notifyPixExpired({ customerName, customerEmail }) {
 // ─────────────────────────────────────────────
 
 /** 2 minutos após geração — inclui código Pix */
-export async function schedulePixReminder({ customerName, customerEmail, pixCode }) {
+export async function schedulePixReminder({ customerName, customerEmail, customerPhone, pixCode }) {
+  const firstName = (customerName || '').trim().split(' ')[0];
+  // WhatsApp imediato (30min simulado via delay)
+  setTimeout(() => {
+    sendWhatsApp(customerPhone,
+      `⏳ Oi ${firstName}! Seu PIX ainda está aguardando pagamento.\n\n` +
+      `Não deixe expirar — sua Luminária Solare está reservada para você! 💡\n\n` +
+      `Abra seu app de banco e pague o PIX para garantir seu pedido.`
+    ).catch(() => {});
+  }, 30 * 60 * 1000);
+
   if (!RESEND_API_KEY) return null;
   return scheduleEmail({
     to: customerEmail,
@@ -520,7 +531,17 @@ export async function schedulePixReminder({ customerName, customerEmail, pixCode
 }
 
 /** 2 horas após geração */
-export async function schedulePixReminder2h({ customerName, customerEmail }) {
+export async function schedulePixReminder2h({ customerName, customerEmail, customerPhone }) {
+  const firstName = (customerName || '').trim().split(' ')[0];
+  setTimeout(() => {
+    sendWhatsApp(customerPhone,
+      `🔔 ${firstName}, sua luminária ainda está te esperando!\n\n` +
+      `Seu PIX foi gerado há 2 horas e ainda não foi pago. ` +
+      `Ainda dá tempo de garantir a promoção! 💚\n\n` +
+      `Qualquer problema, estamos aqui para ajudar.`
+    ).catch(() => {});
+  }, 2 * 60 * 60 * 1000);
+
   if (!RESEND_API_KEY) return null;
   return scheduleEmail({
     to: customerEmail,
@@ -530,8 +551,17 @@ export async function schedulePixReminder2h({ customerName, customerEmail }) {
   });
 }
 
-/** 4 horas após geração — urgência / "perderá a promoção" */
-export async function schedulePixReminder4h({ customerName, customerEmail }) {
+/** 4 horas após geração — urgência */
+export async function schedulePixReminder4h({ customerName, customerEmail, customerPhone }) {
+  const firstName = (customerName || '').trim().split(' ')[0];
+  setTimeout(() => {
+    sendWhatsApp(customerPhone,
+      `🚨 Última chance, ${firstName}!\n\n` +
+      `Seu PIX está prestes a expirar. Após isso você perde a promoção e terá que fazer um novo pedido.\n\n` +
+      `Pague agora e garanta sua Luminária Solare! 💡`
+    ).catch(() => {});
+  }, 4 * 60 * 60 * 1000);
+
   if (!RESEND_API_KEY) return null;
   return scheduleEmail({
     to: customerEmail,
