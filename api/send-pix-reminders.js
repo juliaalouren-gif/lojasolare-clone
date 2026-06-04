@@ -21,6 +21,12 @@ export default async function handler(req, res) {
       .eq('payment_method', 'pix')
       .gte('created_at', cutoff);
 
+    // If columns don't exist yet, skip gracefully
+    if (error?.message?.includes('does not exist')) {
+      console.warn('[PIX Reminders] wa_ columns missing — skipping');
+      return res.status(200).json({ sent: 0, note: 'columns_missing' });
+    }
+
     if (error) throw error;
     if (!orders || orders.length === 0) return res.status(200).json({ sent: 0 });
 
