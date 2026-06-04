@@ -79,6 +79,31 @@ export default async function handler(req, res) {
       }
     }
 
+    // ── Abandoned checkout check ─────────────────────────────
+    const cutoff30m = new Date(now.getTime() - 30 * 60 * 1000).toISOString();
+    const cutoff24h = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+
+    const { data: leads } = await supabase
+      .from('leads')
+      .select('id, name, phone')
+      .eq('converted', false)
+      .eq('whatsapp_sent', false)
+      .lte('last_seen', cutoff30m)
+      .gte('last_seen', cutoff24h);
+
+    for (const lead of (leads || [])) {
+      const firstName = lead.name.trim().split(' ')[0];
+      const ok = await sendWhatsApp(lead.phone,
+        `Oi ${firstName}! 👋 Vimos que você quase finalizou seu pedido na Solare.\n\n` +
+        `Ficou com alguma dúvida ou ocorreu algum problema? Estamos aqui para ajudar! 💚\n\n` +
+        `Acesse novamente: ${process.env.SITE_URL || 'https://www.solarelojas.com.br'}`
+      );
+      if (ok !== null) {
+        await supabase.from('leads').update({ whatsapp_sent: true }).eq('id', lead.id);
+        sent++;
+      }
+    }
+
     return res.status(200).json({ sent, checked: orders.length });
 
   } catch (err) {
