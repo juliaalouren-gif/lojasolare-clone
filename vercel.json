@@ -1,6 +1,10 @@
 {
   "crons": [
     {
+      "path": "/api/send-pix-reminders",
+      "schedule": "*/5 * * * *"
+    },
+    {
       "path": "/api/check-abandoned",
       "schedule": "*/30 * * * *"
     }
