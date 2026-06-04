@@ -512,14 +512,14 @@ export async function notifyPixExpired({ customerName, customerEmail }) {
 /** 2 minutos após geração — inclui código Pix */
 export async function schedulePixReminder({ customerName, customerEmail, customerPhone, pixCode }) {
   const firstName = (customerName || '').trim().split(' ')[0];
-  // WhatsApp imediato (30min simulado via delay)
+  // WhatsApp após 3 minutos
   setTimeout(() => {
     sendWhatsApp(customerPhone,
       `⏳ Oi ${firstName}! Seu PIX ainda está aguardando pagamento.\n\n` +
       `Não deixe expirar — sua Luminária Solare está reservada para você! 💡\n\n` +
       `Abra seu app de banco e pague o PIX para garantir seu pedido.`
     ).catch(() => {});
-  }, 30 * 60 * 1000);
+  }, 3 * 60 * 1000);
 
   if (!RESEND_API_KEY) return null;
   return scheduleEmail({
