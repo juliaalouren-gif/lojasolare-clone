@@ -155,9 +155,9 @@ export default async function handler(req, res) {
     if (isPix) {
       const pixCode = mpResult.point_of_interaction?.transaction_data?.qr_code;
       [pixReminderId, pixReminder2hId, pixReminder4hId] = await Promise.all([
-        pixCode ? schedulePixReminder({ customerName, customerEmail, pixCode }).catch(() => null) : null,
-        schedulePixReminder2h({ customerName, customerEmail }).catch(() => null),
-        schedulePixReminder4h({ customerName, customerEmail }).catch(() => null),
+        pixCode ? schedulePixReminder({ customerName, customerEmail, customerPhone, pixCode }).catch(() => null) : null,
+        schedulePixReminder2h({ customerName, customerEmail, customerPhone }).catch(() => null),
+        schedulePixReminder4h({ customerName, customerEmail, customerPhone }).catch(() => null),
       ]);
     }
 
