@@ -178,7 +178,7 @@
                 fbq('trackCustom', 'PurchasePix', { value: orderTotal, currency: 'BRL' });
             }
             if (typeof ttq !== 'undefined') {
-                ttq.track('CompletePayment', { content_id: 'solare-luminaria', content_type: 'product', value: orderTotal, currency: 'BRL', quantity: 1 });
+                ttq.track('Purchase', { contents: [{ content_id: 'solare-luminaria', content_type: 'product', content_name: 'Luminária Solar Solare' }], value: orderTotal, currency: 'BRL' });
             }
             gtag('event', 'conversion', {
                 'send_to': 'AW-17714329725/033BCIzz6JwcEP3w7P5B',
