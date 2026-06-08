@@ -114,9 +114,11 @@ export default async function handler(req, res) {
 
     // Send notifications based on status
     if (order) {
+      const previousStatus = order.status;
       if (newStatus === 'approved') {
         const firstName = (order.customer_name || '').trim().split(' ')[0];
-        sendWhatsApp(order.customer_phone,
+        // For card payments already approved synchronously, avoid double WhatsApp
+        if (previousStatus !== 'approved') sendWhatsApp(order.customer_phone,
           `🎉 Pagamento confirmado, ${firstName}!\n\n` +
           `Seu pedido está certinho com a Solare e logo será preparado para entrega. ` +
           `Obrigado pela confiança! 💚\n\n` +

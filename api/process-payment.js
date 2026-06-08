@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, schedulePixReminder, schedulePixReminder2h, schedulePixReminder4h, schedulePostPurchaseEmails } from './send-notification.js';
 import { sendMetaEvent } from './meta-capi.js';
+import { sendWhatsApp } from './whatsapp.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -190,6 +191,14 @@ export default async function handler(req, res) {
     // Pix: email de confirmação e emails pós-compra são enviados em check-payment-status
     // quando o pagamento for de fato detectado como aprovado
     if (!isPix && paymentStatus === 'approved') {
+      const firstName = nameParts[0];
+      sendWhatsApp(customerPhone,
+        `🎉 Pagamento confirmado, ${firstName}!\n\n` +
+        `Seu pedido está certinho com a Solare e logo será preparado para entrega. ` +
+        `Obrigado pela confiança! 💚\n\n` +
+        `Qualquer dúvida é só chamar aqui no WhatsApp.`
+      ).catch(() => {});
+
       await notifyPaymentApproved({
         customerName, customerEmail, customerPhone,
         totalPrice, shippingMethod,
