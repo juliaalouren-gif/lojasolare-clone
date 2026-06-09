@@ -91,7 +91,26 @@ export default async function handler(req, res) {
       .lte('last_seen', cutoff30m)
       .gte('last_seen', cutoff24h);
 
+    // Build set of approved-order phones (clean digits) to never message a paying customer
+    const { data: approvedOrders } = await supabase
+      .from('orders')
+      .select('customer_phone')
+      .eq('status', 'approved')
+      .gte('created_at', cutoff24h);
+
+    const approvedPhones = new Set(
+      (approvedOrders || []).map(o => String(o.customer_phone || '').replace(/\D/g, ''))
+    );
+
     for (const lead of (leads || [])) {
+      const cleanLeadPhone = String(lead.phone || '').replace(/\D/g, '');
+
+      // If this lead has a paid order, mark converted and skip — never send abandonment to a buyer
+      if (approvedPhones.has(cleanLeadPhone)) {
+        await supabase.from('leads').update({ converted: true }).eq('id', lead.id);
+        continue;
+      }
+
       const firstName = lead.name.trim().split(' ')[0];
       const ok = await sendWhatsApp(lead.phone,
         `Oi ${firstName}! 👋 Vimos que você quase finalizou seu pedido na Solare.\n\n` +
