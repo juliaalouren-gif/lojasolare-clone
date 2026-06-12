@@ -94,6 +94,14 @@ export default async function handler(req, res) {
       .eq('mp_payment_id', String(paymentId))
       .single();
 
+    const previousStatus = order?.status;
+
+    // Never downgrade a paid order — if already approved, ignore cancelled/rejected webhooks
+    if (previousStatus === 'approved' && newStatus !== 'approved') {
+      console.log(`[Webhook] Ignoring status downgrade approved → ${newStatus} for payment ${paymentId}`);
+      return res.status(200).json({ updated: false, reason: 'already_approved' });
+    }
+
     const { error: updateError } = await supabase
       .from('orders')
       .update({ status: newStatus })
@@ -114,7 +122,6 @@ export default async function handler(req, res) {
 
     // Send notifications based on status
     if (order) {
-      const previousStatus = order.status;
       if (newStatus === 'approved') {
         const firstName = (order.customer_name || '').trim().split(' ')[0];
         // For card payments already approved synchronously, avoid double WhatsApp
