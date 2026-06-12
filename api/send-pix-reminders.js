@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendWhatsApp } from './whatsapp.js';
+import { sendWhatsApp } from '../lib/whatsapp.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

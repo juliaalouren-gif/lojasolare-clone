@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { sendTrackingEmail } from './send-notification.js';
+import { sendTrackingEmail } from '../lib/send-notification.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

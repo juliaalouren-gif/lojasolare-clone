@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved } from './send-notification.js';
+import { notifyPaymentApproved } from '../lib/send-notification.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

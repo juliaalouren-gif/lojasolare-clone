@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved, cancelPixReminder, schedulePostPurchaseEmails } from './send-notification.js';
-import { sendMetaEvent } from './meta-capi.js';
+import { notifyPaymentApproved, cancelPixReminder, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { sendMetaEvent } from '../lib/meta-capi.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

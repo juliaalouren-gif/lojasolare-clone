@@ -8,7 +8,7 @@
  */
 
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved, schedulePostPurchaseEmails } from './send-notification.js';
+import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,

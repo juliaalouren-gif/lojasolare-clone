@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } from './send-notification.js';
-import { sendMetaEvent } from './meta-capi.js';
-import { sendWhatsApp } from './whatsapp.js';
+import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { sendMetaEvent } from '../lib/meta-capi.js';
+import { sendWhatsApp } from '../lib/whatsapp.js';
 import crypto from 'crypto';
 
 function verifyMpSignature(req) {
