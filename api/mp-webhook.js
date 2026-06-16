@@ -46,10 +46,9 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  // Signature verification is optional — only enforced if MP_WEBHOOK_SECRET is set and valid
   if (process.env.MP_WEBHOOK_SECRET && !verifyMpSignature(req)) {
-    console.warn('[Webhook] Invalid signature — logging but continuing');
-    // Don't reject — log and proceed so legitimate events are never dropped
+    console.warn('[Webhook] Invalid signature — rejecting request');
+    return res.status(401).json({ error: 'Invalid signature' });
   }
 
   try {
