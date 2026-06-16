@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { randomUUID } from 'crypto';
 import { notifyPaymentApproved, schedulePixReminder, schedulePixReminder2h, schedulePixReminder4h, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
@@ -31,7 +32,18 @@ export default async function handler(req, res) {
       installments,
       shippingMethod,
       shippingPrice,
+      orderBumps,
     } = req.body;
+
+    // Server-side bump price map — must match client
+    const BUMP_PRICES_SERVER = { luminaria: 49.90, envio: 9.90, garantia: 5.90 };
+    const serverBumpTotal = (bumps) => {
+      if (!bumps || typeof bumps !== 'object') return 0;
+      return Object.entries(BUMP_PRICES_SERVER)
+        .filter(([k]) => bumps[k] === true)
+        .reduce((sum, [, v]) => sum + v, 0);
+    };
+    const bumpTotal = serverBumpTotal(orderBumps);
 
     // ── Validação ──────────────────────────────────────────
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -53,6 +65,9 @@ export default async function handler(req, res) {
     const PRECO_MINIMO = 74.95;
     if (parsedTotal < PRECO_MINIMO)
       return res.status(400).json({ error: 'Valor do pedido inválido. Atualize a página e tente novamente.' });
+    // Garante que os bumps selecionados estão incluídos no total enviado
+    if (parsedTotal < PRECO_MINIMO + bumpTotal)
+      return res.status(400).json({ error: 'Valor do pedido inválido. Atualize a página e tente novamente.' });
     if (!customerAddress?.cep || String(customerAddress.cep).replace(/\D/g, '').length !== 8)
       return res.status(400).json({ error: 'CEP inválido.' });
     if (!['pix', 'credit_card'].includes(String(paymentMethodId)))
@@ -62,11 +77,24 @@ export default async function handler(req, res) {
     const nameParts = customerName.trim().split(/\s+/);
     const firstName  = nameParts[0];
     const lastName   = nameParts.slice(1).join(' ') || firstName;
+    const internalOrderId = randomUUID();
 
     // ── Montar pagamento Mercado Pago ──────────────────────
     const paymentBody = {
       transaction_amount: parsedTotal,
       description: `Luminária Solar Solare — Kit ${quantity} unidades`,
+      notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
+      external_reference: internalOrderId,
+      additional_info: {
+        items: [{
+          id: 'solare-luminaria',
+          title: `Luminária Solar LED Solare — Kit ${parsedQty} unidades`,
+          description: 'Luminária solar LED recarregável, resistente à água, sem fio. Acende automaticamente à noite.',
+          category_id: 'home',
+          quantity: 1,
+          unit_price: parsedTotal,
+        }],
+      },
       payer: {
         email:      customerEmail.trim().toLowerCase(),
         first_name: firstName,
@@ -120,11 +148,12 @@ export default async function handler(req, res) {
 
     // ── Salvar no Supabase ────────────────────────────────
     const orderData = {
+      id:                  internalOrderId,
       customer_name:       customerName,
       customer_email:      customerEmail,
       customer_cpf:        customerCpf,
       customer_phone:      customerPhone,
-      customer_address:    customerAddress,
+      customer_address:    { ...customerAddress, orderBumps: orderBumps || {} },
       product_quantity:    quantity,
       product_light_color: lightColor,
       total_price:         totalPrice,
