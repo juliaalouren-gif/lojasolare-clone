@@ -85,6 +85,7 @@ export default async function handler(req, res) {
       description: `Luminária Solar Solare — Kit ${quantity} unidades`,
       notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
       external_reference: internalOrderId,
+      statement_descriptor: 'Solare Luminarias',
       additional_info: {
         items: [{
           id: 'solare-luminaria',
@@ -94,6 +95,24 @@ export default async function handler(req, res) {
           quantity: 1,
           unit_price: parsedTotal,
         }],
+        payer: {
+          first_name: firstName,
+          last_name:  lastName,
+          address: {
+            zip_code:      String(customerAddress?.cep || '').replace(/\D/g, ''),
+            street_name:   customerAddress?.street || customerAddress?.logradouro || '',
+            street_number: String(customerAddress?.number || customerAddress?.numero || ''),
+          },
+        },
+        shipments: {
+          receiver_address: {
+            zip_code:    String(customerAddress?.cep || '').replace(/\D/g, ''),
+            state_name:  customerAddress?.state || '',
+            city_name:   customerAddress?.city  || '',
+            street_name: customerAddress?.street || customerAddress?.logradouro || '',
+            street_number: String(customerAddress?.number || customerAddress?.numero || ''),
+          },
+        },
       },
       payer: {
         email:      customerEmail.trim().toLowerCase(),
@@ -102,6 +121,11 @@ export default async function handler(req, res) {
         identification: {
           type:   'CPF',
           number: cpfDigits,
+        },
+        address: {
+          zip_code:      String(customerAddress?.cep || '').replace(/\D/g, ''),
+          street_name:   customerAddress?.street || customerAddress?.logradouro || '',
+          street_number: String(customerAddress?.number || customerAddress?.numero || ''),
         },
       },
     };
