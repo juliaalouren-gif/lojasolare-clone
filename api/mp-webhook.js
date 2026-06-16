@@ -4,9 +4,9 @@ import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import crypto from 'crypto';
 
-function verifyMpSignature(req) {
+function verifyMpSignature(req, paymentId) {
   const secret = process.env.MP_WEBHOOK_SECRET;
-  if (!secret) return true; // se ainda não configurado, não bloqueia (mas loga aviso)
+  if (!secret) return true;
 
   const xSignature = req.headers['x-signature'];
   const xRequestId = req.headers['x-request-id'];
@@ -14,14 +14,17 @@ function verifyMpSignature(req) {
 
   const parts = {};
   xSignature.split(',').forEach(part => {
-    const [k, v] = part.split('=');
-    if (k && v) parts[k.trim()] = v.trim();
+    const idx = part.indexOf('=');
+    if (idx !== -1) {
+      const k = part.slice(0, idx).trim();
+      const v = part.slice(idx + 1).trim();
+      if (k && v) parts[k] = v;
+    }
   });
 
   const { ts, v1: hash } = parts;
   if (!ts || !hash) return false;
 
-  const paymentId = req.body?.data?.id;
   const manifest = `id:${paymentId};request-id:${xRequestId};ts:${ts}`;
   const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
 
@@ -46,11 +49,6 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  if (process.env.MP_WEBHOOK_SECRET && !verifyMpSignature(req)) {
-    console.warn('[Webhook] Invalid signature — rejecting request');
-    return res.status(401).json({ error: 'Invalid signature' });
-  }
-
   try {
     const { type, data } = req.body;
 
@@ -63,6 +61,15 @@ export default async function handler(req, res) {
       return res.status(400).end();
     }
 
+    if (process.env.MP_WEBHOOK_SECRET && !verifyMpSignature(req, paymentId)) {
+      console.warn('[Webhook] Invalid signature', {
+        xSignature: req.headers['x-signature'],
+        xRequestId: req.headers['x-request-id'],
+        paymentId,
+      });
+      return res.status(401).json({ error: 'Invalid signature' });
+    }
+
     const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
       headers: {
         'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
@@ -70,7 +77,8 @@ export default async function handler(req, res) {
     });
 
     if (!mpResponse.ok) {
-      return res.status(500).end();
+      console.error('[Webhook] MP API error fetching payment', { paymentId, status: mpResponse.status });
+      return res.status(200).json({ status: 'mp_api_error' });
     }
 
     const payment = await mpResponse.json();
@@ -107,8 +115,8 @@ export default async function handler(req, res) {
       .eq('mp_payment_id', String(paymentId));
 
     if (updateError) {
-      console.error('DB Update Error:', updateError);
-      return res.status(500).end();
+      console.error('[Webhook] DB update error:', updateError);
+      return res.status(200).json({ status: 'db_error' });
     }
 
     // Mark lead as converted so abandonment message is not sent
@@ -198,7 +206,7 @@ export default async function handler(req, res) {
     return res.status(200).json({ updated: true });
 
   } catch (err) {
-    console.error('Webhook error:', err);
-    return res.status(500).end();
+    console.error('[Webhook] Unhandled error:', err);
+    return res.status(200).json({ status: 'internal_error' });
   }
 }
