@@ -788,6 +788,20 @@
         white: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg'
     };
     window.addEventListener('DOMContentLoaded', function() {
+        // Initialise LED kit defaults (script.js defaults to qty=2 for the solar product)
+        window.currentSelectedQty = 3;
+        window.currentSelectedPrice = 79.90;
+        window.currentSelectedOldPrice = 157.90;
+        if (typeof currentKitBaseQty !== 'undefined') {
+            currentKitBaseQty = 3;
+            currentKitBasePrice = 79.90;
+            currentKitBaseOldPrice = 157.90;
+            currentKitMultiplier = 1;
+            currentSelectedQty = 3;
+            currentSelectedPrice = 79.90;
+            currentSelectedOldPrice = 157.90;
+        }
+
         // Override handleCheckout AFTER script.js (defer) already ran
         window.handleCheckout = function() {
             const activeLight = document.querySelector('.variant-btn.active[data-value]');

@@ -33,6 +33,7 @@ export default async function handler(req, res) {
       shippingMethod,
       shippingPrice,
       orderBumps,
+      deviceId,
     } = req.body;
 
     // Server-side bump price map — must match client
@@ -141,13 +142,17 @@ export default async function handler(req, res) {
     }
 
     // ── Chamar API Mercado Pago ────────────────────────────
+    const mpHeaders = {
+      'Authorization':    `Bearer ${MP_ACCESS_TOKEN}`,
+      'Content-Type':     'application/json',
+      'X-Idempotency-Key': `solare-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    };
+    if (deviceId && typeof deviceId === 'string' && deviceId.length > 0) {
+      mpHeaders['X-Meli-Session-Id'] = deviceId;
+    }
     const mpResponse = await fetch(`${MP_BASE}/v1/payments`, {
       method:  'POST',
-      headers: {
-        'Authorization':    `Bearer ${MP_ACCESS_TOKEN}`,
-        'Content-Type':     'application/json',
-        'X-Idempotency-Key': `solare-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      },
+      headers: mpHeaders,
       body: JSON.stringify(paymentBody),
     });
 
