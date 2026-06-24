@@ -1017,15 +1017,6 @@
                         </div>
                         <div class="bump-price">+ R$ 9,90</div>
                     </div>
-                    <div class="order-bump" id="bump-garantia" onclick="toggleBump('garantia')">
-                        <div class="bump-check"><i class="fas fa-check"></i></div>
-                        <div class="bump-content">
-                            <span class="bump-badge">RECOMENDADO</span>
-                            <div class="bump-name">Garantia Estendida 90 dias</div>
-                            <div class="bump-desc">Qualquer problema, troca garantida por 90 dias</div>
-                        </div>
-                        <div class="bump-price">+ R$ 5,90</div>
-                    </div>
                 </div>
                 <hr style="border:none;border-top:1px solid var(--border);margin:0 0 14px;">
 
@@ -1211,8 +1202,8 @@
     let selectedShippingName = 'Envio Regular (Grátis)';
 
     // ── ORDER BUMPS ───────────────────────────────────────
-    const BUMP_PRICES = { luminaria: 49.90, envio: 9.90, garantia: 5.90 };
-    let selectedBumps  = { luminaria: false, envio: false, garantia: false };
+    const BUMP_PRICES = { luminaria: 49.90, envio: 9.90 };
+    let selectedBumps  = { luminaria: false, envio: false };
 
     function getBumpTotal() {
         return Object.entries(selectedBumps)
