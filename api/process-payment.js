@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import { notifyPaymentApproved, schedulePixReminder, schedulePixReminder2h, schedulePixReminder4h, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 
@@ -207,19 +207,6 @@ export default async function handler(req, res) {
 
     if (dbError) console.error('Supabase Error:', dbError);
 
-    // ── Reminders Pix (canceláveis se a pessoa pagar) ────
-    let pixReminderId = null;
-    let pixReminder2hId = null;
-    let pixReminder4hId = null;
-    if (isPix) {
-      const pixCode = mpResult.point_of_interaction?.transaction_data?.qr_code;
-      [pixReminderId, pixReminder2hId, pixReminder4hId] = await Promise.all([
-        pixCode ? schedulePixReminder({ customerName, customerEmail, customerPhone, pixCode }).catch(() => null) : null,
-        schedulePixReminder2h({ customerName, customerEmail, customerPhone }).catch(() => null),
-        schedulePixReminder4h({ customerName, customerEmail, customerPhone }).catch(() => null),
-      ]);
-    }
-
     // ── Meta CAPI: Pix → dispara na geração; Cartão → dispara na aprovação ──
     if (isPix || paymentStatus === 'approved') {
       sendMetaEvent({
@@ -251,10 +238,7 @@ export default async function handler(req, res) {
     if (!isPix && paymentStatus === 'approved') {
       const firstName = nameParts[0];
       sendWhatsApp(customerPhone,
-        `🎉 Pagamento confirmado, ${firstName}!\n\n` +
-        `Seu pedido está certinho com a Solare e logo será preparado para entrega. ` +
-        `Obrigado pela confiança! 💚\n\n` +
-        `Qualquer dúvida é só chamar aqui no WhatsApp.`
+        `Ola ${firstName} seu pedido foi processado certinho e logo sairá para entrega, lembrando que o prazo de entrega é uma projeção de até 8 dias`
       ).catch(() => {});
 
       await notifyPaymentApproved({
@@ -275,9 +259,6 @@ export default async function handler(req, res) {
       orderId:         order?.id || null,
       qr_code:         isPix ? (mpResult.point_of_interaction?.transaction_data?.qr_code        ?? null) : null,
       qr_code_base64:  isPix ? (mpResult.point_of_interaction?.transaction_data?.qr_code_base64 ?? null) : null,
-      pix_reminder_id:    pixReminderId    || null,
-      pix_reminder_2h_id: pixReminder2hId  || null,
-      pix_reminder_4h_id: pixReminder4hId  || null,
     });
 
   } catch (err) {
