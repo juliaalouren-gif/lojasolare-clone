@@ -122,8 +122,7 @@ export default async function handler(req, res) {
     if (order?.customer_phone) {
       supabase.from('leads')
         .update({ converted: true })
-        .eq('phone', String(order.customer_phone).replace(/\D/g, ''))
-        .catch(() => {});
+        .eq('phone', String(order.customer_phone).replace(/\D/g, ''));
     }
 
     // Send notifications based on status
