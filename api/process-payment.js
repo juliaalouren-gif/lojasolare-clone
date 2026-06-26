@@ -34,6 +34,7 @@ export default async function handler(req, res) {
       shippingPrice,
       orderBumps,
       deviceId,
+      productName,
     } = req.body;
 
     // Server-side bump price map — must match client
@@ -83,7 +84,7 @@ export default async function handler(req, res) {
     // ── Montar pagamento Mercado Pago ──────────────────────
     const paymentBody = {
       transaction_amount: parsedTotal,
-      description: `Luminária Solar Solare — Kit ${quantity} unidades`,
+      description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
       notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
       external_reference: internalOrderId,
       statement_descriptor: 'Solare Luminarias',

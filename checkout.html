@@ -1198,6 +1198,8 @@
     const price = parseFloat(urlParams.get('price') || '8.00');
     const light = urlParams.get('light') || 'warm';
     const productType = urlParams.get('product') || 'solar';
+    const productNameMap = { solar: 'Luminária Solar Solare', led: 'Luminária LED Sem Fio Solare', 'lampada-led': 'Lâmpada LED Solar Max' };
+    const productName = productNameMap[productType] || 'Luminária Solar Solare';
     let selectedShippingPrice = 0;
     let selectedShippingName = 'Envio Regular (Grátis)';
 
@@ -1261,6 +1263,9 @@
     if (productType === 'led') {
         document.getElementById('sum-img').src = 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg';
         document.getElementById('sum-title').textContent = 'Luminária LED Sem Fio Solare';
+    } else if (productType === 'lampada-led') {
+        document.getElementById('sum-img').src = 'https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670';
+        document.getElementById('sum-title').textContent = 'Lâmpada LED Solar Max';
     } else {
         document.getElementById('sum-img').src = light === 'warm' ? 'luminaria-warm.png' : 'luminaria-white.png';
     }
@@ -1646,6 +1651,7 @@
                     shippingMethod:      selectedShippingName,
                     shippingPrice:       selectedShippingPrice,
                     orderBumps:          selectedBumps,
+                    productName:         productName,
                 })
             });
 
@@ -1732,6 +1738,7 @@
                     shippingMethod: selectedShippingName,
                     shippingPrice: selectedShippingPrice,
                     orderBumps: selectedBumps,
+                    productName: productName,
                 })
             });
             const result = await res.json();
