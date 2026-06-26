@@ -233,9 +233,14 @@ export default async function handler(req, res) {
       }).catch(e => console.error('Meta CAPI failed (non-fatal):', e));
     }
 
+    // Mark lead converted immediately on card approval so abandonment cron never fires
+    if (!isPix && paymentStatus === 'approved' && customerPhone) {
+      supabase.from('leads')
+        .update({ converted: true })
+        .eq('phone', String(customerPhone).replace(/\D/g, ''));
+    }
+
     // ── Emails pós-compra: apenas cartão aprovado
-    // Pix: email de confirmação e emails pós-compra são enviados em check-payment-status
-    // quando o pagamento for de fato detectado como aprovado
     if (!isPix && paymentStatus === 'approved') {
       const firstName = nameParts[0];
       sendWhatsApp(customerPhone,

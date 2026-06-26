@@ -91,12 +91,13 @@ export default async function handler(req, res) {
       .lte('last_seen', cutoff30m)
       .gte('last_seen', cutoff24h);
 
-    // Build set of approved-order phones (clean digits) to never message a paying customer
-    const { data: approvedOrders } = await supabase
+    // Build set of approved-order phones — no date cutoff so old buyers are never re-messaged
+    const { data: approvedOrders, error: approvedErr } = await supabase
       .from('orders')
       .select('customer_phone')
-      .eq('status', 'approved')
-      .gte('created_at', cutoff24h);
+      .eq('status', 'approved');
+
+    if (approvedErr) console.error('[PIX Reminders] approved orders query error:', approvedErr);
 
     const approvedPhones = new Set(
       (approvedOrders || []).map(o => String(o.customer_phone || '').replace(/\D/g, ''))
