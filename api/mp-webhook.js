@@ -131,7 +131,7 @@ export default async function handler(req, res) {
         const firstName = (order.customer_name || '').trim().split(' ')[0];
         // For card payments already approved synchronously, avoid double WhatsApp
         if (previousStatus !== 'approved') sendWhatsApp(order.customer_phone,
-          `Ola ${firstName} seu pedido foi processado certinho e logo sairá para entrega, lembrando que o prazo de entrega é uma projeção de até 8 dias`
+          `Olá ${firstName}, seu pedido foi confirmado e logo sairá para entrega, lembrando que nosso prazo de entrega é de 8 dias`
         ).catch(() => {});
 
         await notifyPaymentApproved({
