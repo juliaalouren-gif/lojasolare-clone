@@ -1204,7 +1204,18 @@
     let selectedShippingName = 'Envio Regular (Grátis)';
 
     // ── ORDER BUMPS ───────────────────────────────────────
-    const BUMP_PRICES = { luminaria: 49.90, envio: 9.90 };
+    const BUMP_CONFIG = productType === 'led'
+        ? { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 }
+        : { name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 };
+    // Atualiza o HTML do bump conforme o produto
+    (function() {
+        const el = document.getElementById('bump-luminaria');
+        if (!el) return;
+        el.querySelector('.bump-name').textContent = BUMP_CONFIG.name;
+        el.querySelector('.bump-desc').textContent = BUMP_CONFIG.desc;
+        el.querySelector('.bump-price').textContent = '+ R$ ' + BUMP_CONFIG.price.toFixed(2).replace('.', ',');
+    })();
+    const BUMP_PRICES = { luminaria: BUMP_CONFIG.price, envio: 9.90 };
     let selectedBumps  = { luminaria: false, envio: false };
 
     function getBumpTotal() {
@@ -1652,6 +1663,7 @@
                     shippingPrice:       selectedShippingPrice,
                     orderBumps:          selectedBumps,
                     productName:         productName,
+                    productType:         productType,
                 })
             });
 
@@ -1739,6 +1751,7 @@
                     shippingPrice: selectedShippingPrice,
                     orderBumps: selectedBumps,
                     productName: productName,
+                    productType: productType,
                 })
             });
             const result = await res.json();
