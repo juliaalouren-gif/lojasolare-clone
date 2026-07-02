@@ -130,7 +130,7 @@ export default async function handler(req, res) {
       if (newStatus === 'approved') {
         const firstName = (order.customer_name || '').trim().split(' ')[0];
         // For card payments already approved synchronously, avoid double WhatsApp
-        if (previousStatus !== 'approved') sendWhatsApp(order.customer_phone,
+        if (previousStatus !== 'approved') await sendWhatsApp(order.customer_phone,
           `Olá ${firstName}, seu pedido foi confirmado e logo sairá para entrega, lembrando que nosso prazo de entrega é de 8 dias`
         ).catch(() => {});
 

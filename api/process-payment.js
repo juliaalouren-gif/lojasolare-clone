@@ -243,7 +243,7 @@ export default async function handler(req, res) {
     // ── Emails pós-compra: apenas cartão aprovado
     if (!isPix && paymentStatus === 'approved') {
       const firstName = nameParts[0];
-      sendWhatsApp(customerPhone,
+      await sendWhatsApp(customerPhone,
         `Olá ${firstName}, seu pedido foi confirmado e logo sairá para entrega, lembrando que nosso prazo de entrega é de 8 dias`
       ).catch(() => {});
 
