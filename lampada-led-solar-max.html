@@ -343,18 +343,39 @@
                 <!-- Grade de vídeos 2x2 -->
                 <div class="video-grid-2x2">
                     <div class="video-cell">
-                        <video src="resistente.mp4" autoplay loop muted playsinline></video>
+                        <video class="lazy-video" data-src="resistente.mp4" loop muted playsinline preload="none"></video>
                     </div>
                     <div class="video-cell">
-                        <video src="naoprecisadefios.mp4" autoplay loop muted playsinline></video>
+                        <video class="lazy-video" data-src="naoprecisadefios.mp4" loop muted playsinline preload="none"></video>
                     </div>
                     <div class="video-cell">
-                        <video src="aprovadagua.mp4" autoplay loop muted playsinline></video>
+                        <video class="lazy-video" data-src="aprovadagua.mp4" loop muted playsinline preload="none"></video>
                     </div>
                     <div class="video-cell">
-                        <video src="sensordemovimento.mp4" autoplay loop muted playsinline></video>
+                        <video class="lazy-video" data-src="sensordemovimento.mp4" loop muted playsinline preload="none"></video>
                     </div>
                 </div>
+                <script>
+                (function() {
+                    var videos = document.querySelectorAll('video.lazy-video');
+                    if (!('IntersectionObserver' in window)) {
+                        videos.forEach(function(v) { v.src = v.dataset.src; v.play().catch(function(){}); });
+                        return;
+                    }
+                    var io = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            var v = entry.target;
+                            if (entry.isIntersecting) {
+                                if (!v.src) { v.src = v.dataset.src; }
+                                v.play().catch(function(){});
+                            } else {
+                                v.pause();
+                            }
+                        });
+                    }, { rootMargin: '200px 0px' });
+                    videos.forEach(function(v) { io.observe(v); });
+                })();
+                </script>
                 <style>
                 .video-grid-2x2 {
                     display: grid;
@@ -382,14 +403,14 @@
                 </style>
 
                 <div class="gif-box">
-                    <img src="https://userelux.com.br/cdn/shop/files/Lampada_Solar_Portatil_ProLight_2_1024x.webp?v=1773090670" alt="Lâmpada LED Solar Max em uso" style="width:100%;border-radius:16px;object-fit:cover;max-height:420px;">
+                    <img src="https://userelux.com.br/cdn/shop/files/Lampada_Solar_Portatil_ProLight_2_1024x.webp?v=1773090670" alt="Lâmpada LED Solar Max em uso" loading="lazy" style="width:100%;border-radius:16px;object-fit:cover;max-height:420px;">
                 </div>
 
                 <div class="desc-item left">
                     <div class="desc-text">
                         <h3>3 Modos de Brilho: Máximo, Médio e Baixo</h3>
                         <p>Adapte a iluminação ao momento. Use o brilho máximo (100 lúmens) para iluminar grandes áreas ao ar livre, o médio para refeições e leituras ao ar livre, ou o baixo para uma luz suave e relaxante durante a noite. Um clique muda tudo.</p>
-                        <img src="ezig.gif" alt="" style="width:100%;border-radius:12px;margin-top:14px;">
+                        <img src="ezig.gif" alt="" loading="lazy" style="width:100%;border-radius:12px;margin-top:14px;">
                     </div>
                     <div class="desc-image">
                         <img src="https://userelux.com.br/cdn/shop/files/kpWtUjT17inzLUmmJk4f_1024x.webp?v=1773090670" alt="3 modos de brilho" loading="lazy">
@@ -406,7 +427,7 @@
                     </div>
                 </div>
 
-                <img src="leca.gif" alt="" style="width:100%;border-radius:16px;margin:10px 0 30px;">
+                <img src="leca.gif" alt="" loading="lazy" style="width:100%;border-radius:16px;margin:10px 0 30px;">
 
                 <div class="desc-item left">
                     <div class="desc-text">
@@ -754,8 +775,8 @@
             <div class="footer-app">
                 <h4>Baixe nosso aplicativo</h4>
                 <div class="app-badges">
-                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
-                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" loading="lazy"></a>
+                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" loading="lazy"></a>
                 </div>
             </div>
 
@@ -803,7 +824,7 @@
         </div>
 
         <div class="copyright">
-            Direitos de Autor &copy; 2026 <a href="index.html" style="color: inherit; text-decoration: none; font-weight: 700;"><img src="logo-solare.png" alt="Solare Premium" class="copyright-logo"></a>.
+            Direitos de Autor &copy; 2026 <a href="index.html" style="color: inherit; text-decoration: none; font-weight: 700;"><img src="logo-solare.png" alt="Solare Premium" class="copyright-logo" loading="lazy"></a>.
         </div>
     </footer>
 

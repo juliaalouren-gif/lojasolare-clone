@@ -18,7 +18,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SOLARE - Luminária Solar de Parede Premium</title>
-    <link rel="preload" href="luminaria-warm.png" as="image">
+    <link rel="preload" href="luminaria-warm.jpg" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -56,7 +56,7 @@
             <div class="logo"><img src="logo-solare.png" alt="Solare Premium"></div>
             <nav id="main-nav">
                 <div class="nav-logo-mobile">
-                    <img src="logo-solare.png" alt="Solare Premium">
+                    <img src="logo-solare.png" alt="Solare Premium" loading="lazy">
                 </div>
                 <a href="#home" onclick="toggleMobileMenu()">🏠 Início</a>
                 <a href="https://wa.me/5521975605337" target="_blank">📞 Entre em contato</a>
@@ -127,16 +127,16 @@
                 <div class="buy-grid">
                     <div class="buy-gallery">
                         <div class="main-gallery-img">
-                             <img id="variant-image" src="luminaria-warm.png" alt="Product View">
+                             <img id="variant-image" src="luminaria-warm.jpg" alt="Product View">
                         </div>
                         <div class="thumbnails">
-                            <img src="luminaria-warm.png" class="thumb active" onclick="updateMainImage('luminaria-warm.png', this)" loading="lazy">
-                            <img src="luminaria-white.png" class="thumb" onclick="updateMainImage('luminaria-white.png', this)" loading="lazy">
-                            <img src="luminaria-info.png" class="thumb" onclick="updateMainImage('luminaria-info.png', this)" loading="lazy">
-                            <img src="luminaria-ip65.png" class="thumb" onclick="updateMainImage('luminaria-ip65.png', this)" loading="lazy">
-                            <img src="luminaria-instalacao.png" class="thumb" onclick="updateMainImage('luminaria-instalacao.png', this)" loading="lazy">
-                            <img src="luminaria-escada.png" class="thumb" onclick="updateMainImage('luminaria-escada.png', this)" loading="lazy">
-                            <img src="luminaria-colagem.png" class="thumb" onclick="updateMainImage('luminaria-colagem.png', this)" loading="lazy">
+                            <img src="luminaria-warm.jpg" class="thumb active" onclick="updateMainImage('luminaria-warm.jpg', this)" loading="lazy">
+                            <img src="luminaria-white.jpg" class="thumb" onclick="updateMainImage('luminaria-white.jpg', this)" loading="lazy">
+                            <img src="luminaria-info.jpg" class="thumb" onclick="updateMainImage('luminaria-info.jpg', this)" loading="lazy">
+                            <img src="luminaria-ip65.jpg" class="thumb" onclick="updateMainImage('luminaria-ip65.jpg', this)" loading="lazy">
+                            <img src="luminaria-instalacao.jpg" class="thumb" onclick="updateMainImage('luminaria-instalacao.jpg', this)" loading="lazy">
+                            <img src="luminaria-escada.jpg" class="thumb" onclick="updateMainImage('luminaria-escada.jpg', this)" loading="lazy">
+                            <img src="luminaria-colagem.jpg" class="thumb" onclick="updateMainImage('luminaria-colagem.jpg', this)" loading="lazy">
                         </div>
                     </div>
 
@@ -357,8 +357,8 @@
                 </div>
 
                 <div class="gif-box">
-                    <video autoplay loop muted playsinline>
-                        <source src="demo-uso.mp4" type="video/mp4">
+                    <video class="lazy-video" loop muted playsinline preload="none">
+                        <source data-src="demo-uso.mp4" type="video/mp4">
                     </video>
                 </div>
 
@@ -368,18 +368,44 @@
                         <p>Com revestimento de ABS resistente e painel solar de alta qualidade, a Solare foi projetada para resistir à chuva, ao vento e ao calor extremo. Sua construção durável e resistente a choques garante anos de funcionamento sem preocupações.</p>
                     </div>
                     <div class="gif-box water-demo">
-                        <video autoplay loop muted playsinline>
-                            <source src="demo-prova-dagua.mp4" type="video/mp4">
+                        <video class="lazy-video" loop muted playsinline preload="none">
+                            <source data-src="demo-prova-dagua.mp4" type="video/mp4">
                         </video>
                     </div>
                     <div class="desc-image">
-                        <img src="luminaria-ip65.png" alt="Resistência IP65" loading="lazy">
+                        <img src="luminaria-ip65.jpg" alt="Resistência IP65" loading="lazy">
                     </div>
                 </div>
 
+                <script>
+                (function() {
+                    var videos = document.querySelectorAll('video.lazy-video');
+                    function loadVideo(v) {
+                        var src = v.querySelector('source');
+                        if (src.dataset.src) { src.src = src.dataset.src; v.load(); }
+                        v.play().catch(function(){});
+                    }
+                    if (!('IntersectionObserver' in window)) {
+                        videos.forEach(loadVideo);
+                        return;
+                    }
+                    var io = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            var v = entry.target;
+                            if (entry.isIntersecting) {
+                                loadVideo(v);
+                            } else {
+                                v.pause();
+                            }
+                        });
+                    }, { rootMargin: '200px 0px' });
+                    videos.forEach(function(v) { io.observe(v); });
+                })();
+                </script>
+
                 <div class="desc-item right">
                     <div class="desc-image">
-                        <img src="luminaria-info.png" alt="Carregamento Solar" loading="lazy">
+                        <img src="luminaria-info.jpg" alt="Carregamento Solar" loading="lazy">
                     </div>
                     <div class="desc-text">
                         <h3>Economia Total: Gasto ZERO</h3>
@@ -393,13 +419,13 @@
                         <p>Não se preocupe em ligar ou desligar. Graças ao sensor crepuscular integrado, as luzes se acendem automaticamente ao anoitecer e se apagam ao amanhecer, garantindo praticidade total.</p>
                     </div>
                     <div class="desc-image">
-                        <img src="luminaria-escada.png" alt="Modo Automático" loading="lazy">
+                        <img src="luminaria-escada.jpg" alt="Modo Automático" loading="lazy">
                     </div>
                 </div>
 
                 <div class="desc-item right">
                     <div class="desc-image">
-                        <img src="luminaria-instalacao.png" alt="Instalação Fácil" loading="lazy">
+                        <img src="luminaria-instalacao.jpg" alt="Instalação Fácil" loading="lazy">
                     </div>
                     <div class="desc-text">
                         <h3>Instalação Expressa</h3>
@@ -450,7 +476,7 @@
                         <!-- Card 1 -->
                         <div class="card-stack-item active" data-index="0">
                             <div class="card-content">
-                                <img src="luminaria-info.png" alt="100% Solar" loading="lazy">
+                                <img src="luminaria-info.jpg" alt="100% Solar" loading="lazy">
                                 <div class="card-overlay"></div>
                                 <div class="card-info">
                                     <span class="card-tag">Sustentável</span>
@@ -462,7 +488,7 @@
                         <!-- Card 2 -->
                         <div class="card-stack-item" data-index="1">
                             <div class="card-content">
-                                <img src="luminaria-ip65.png" alt="IP65" loading="lazy">
+                                <img src="luminaria-ip65.jpg" alt="IP65" loading="lazy">
                                 <div class="card-overlay"></div>
                                 <div class="card-info">
                                     <span class="card-tag">Resistente</span>
@@ -474,7 +500,7 @@
                         <!-- Card 3 -->
                         <div class="card-stack-item" data-index="2">
                             <div class="card-content">
-                                <img src="luminaria-instalacao.png" alt="Instalação" loading="lazy">
+                                <img src="luminaria-instalacao.jpg" alt="Instalação" loading="lazy">
                                 <div class="card-overlay"></div>
                                 <div class="card-info">
                                     <span class="card-tag">Fácil</span>
@@ -486,7 +512,7 @@
                         <!-- Card 4 -->
                         <div class="card-stack-item" data-index="3">
                             <div class="card-content">
-                                <img src="luminaria-garden.png" alt="Design" loading="lazy">
+                                <img src="luminaria-garden.jpg" alt="Design" loading="lazy">
                                 <div class="card-overlay"></div>
                                 <div class="card-info">
                                     <span class="card-tag">Premium</span>
@@ -551,10 +577,10 @@
                     <div class="customer-photos-summary">
                         <h3>Fotos do cliente</h3>
                         <div class="mini-gallery">
-                            <img src="review-vania-v2.png" alt="Client Photo" loading="lazy">
-                            <img src="review-maria.png" alt="Client Photo" loading="lazy">
-                            <img src="review-brenda.png" alt="Client Photo" loading="lazy">
-                            <img src="review-1.png" alt="Client Photo" loading="lazy">
+                            <img src="review-vania-v2.jpg" alt="Client Photo" loading="lazy">
+                            <img src="review-maria.jpg" alt="Client Photo" loading="lazy">
+                            <img src="review-brenda.jpg" alt="Client Photo" loading="lazy">
+                            <img src="review-1.jpg" alt="Client Photo" loading="lazy">
                             <div class="more-photos"><i class="fas fa-ellipsis-h"></i></div>
                         </div>
                         <button class="btn-write-review" onclick="toggleReviewModal()">Escreva um comentário</button>
@@ -574,7 +600,7 @@
                     <!-- Pre-filled Review 1 -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-vania-v2.png" alt="Review Image" loading="lazy">
+                            <img src="review-vania-v2.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">V</span> vania da silva</div>
                         </div>
                         <div class="rc-content">
@@ -589,7 +615,7 @@
                     <!-- Pre-filled Review 2 -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-brenda.png" alt="Review Image" loading="lazy">
+                            <img src="review-brenda.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">B</span> brenda castilho</div>
                         </div>
                         <div class="rc-content">
@@ -604,7 +630,7 @@
                     <!-- Pre-filled Review 3 -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-maria.png" alt="Review Image" loading="lazy">
+                            <img src="review-maria.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">M</span> maria menezes</div>
                         </div>
                         <div class="rc-content">
@@ -619,7 +645,7 @@
                     <!-- Pre-filled Review 4 (New) -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-roberto.png" alt="Review Image" loading="lazy">
+                            <img src="review-roberto.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">R</span> roberto mendes</div>
                         </div>
                         <div class="rc-content">
@@ -634,7 +660,7 @@
                     <!-- Pre-filled Review 5 (New) -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-2.png" alt="Review Image" loading="lazy">
+                            <img src="review-2.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">J</span> juliana costa</div>
                         </div>
                         <div class="rc-content">
@@ -649,7 +675,7 @@
                     <!-- Pre-filled Review 6 (New) -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-3.png" alt="Review Image" loading="lazy">
+                            <img src="review-3.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">M</span> marcos oliveira</div>
                         </div>
                         <div class="rc-content">
@@ -664,7 +690,7 @@
                     <!-- Pre-filled Review 7 (New) -->
                     <div class="review-card">
                         <div class="rc-image">
-                            <img src="review-4.png" alt="Review Image" loading="lazy">
+                            <img src="review-4.jpg" alt="Review Image" loading="lazy">
                             <div class="rc-user-tag"><span class="avatar-letter">S</span> sandra regina</div>
                         </div>
                         <div class="rc-content">
@@ -738,8 +764,8 @@
             <div class="footer-app">
                 <h4>Baixe nosso aplicativo</h4>
                 <div class="app-badges">
-                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store"></a>
-                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play"></a>
+                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/3/3c/Download_on_the_App_Store_Badge.svg" alt="App Store" loading="lazy"></a>
+                    <a href="#" class="app-btn"><img src="https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg" alt="Google Play" loading="lazy"></a>
                 </div>
             </div>
 
@@ -788,7 +814,7 @@
         </div>
 
         <div class="copyright">
-            Direitos de Autor &copy; 2026 <a href="index.html" style="color: inherit; text-decoration: none; font-weight: 700;"><img src="logo-solare.png" alt="Solare Premium" class="copyright-logo"></a>.
+            Direitos de Autor &copy; 2026 <a href="index.html" style="color: inherit; text-decoration: none; font-weight: 700;"><img src="logo-solare.png" alt="Solare Premium" class="copyright-logo" loading="lazy"></a>.
         </div>
     </footer>
 
