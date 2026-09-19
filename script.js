@@ -52,7 +52,7 @@ function selectVariant(element, type) {
 
 // Current globally selected price for dropdown use
 // Defaults match the active kit on page load (Pague 1 Leve 2)
-let currentSelectedPrice = 78.90;
+let currentSelectedPrice = 87.90;
 let currentSelectedQty = 2;
 let currentSelectedOldPrice = 129.90;
 let currentSelectedLight = 'warm';
@@ -63,7 +63,7 @@ window.currentSelectedLight = currentSelectedLight;
 
 // Kit selection state
 let currentKitBaseQty = 2;
-let currentKitBasePrice = 78.90;
+let currentKitBasePrice = 87.90;
 let currentKitBaseOldPrice = 129.90;
 let currentKitMultiplier = 1;
 
