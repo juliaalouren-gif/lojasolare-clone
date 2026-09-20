@@ -33,13 +33,31 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'No saved card found for this order' });
     }
 
-    // Charge the saved card for the upsell (no token needed — uses saved customer card)
+    // Gera um token novo a partir do cartão salvo — o pagamento exige um
+    // "token" (o card_id sozinho não é aceito pelo endpoint de pagamentos).
+    const mpAuthHeaders = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+    };
+    const cardTokenRes = await fetch('https://api.mercadopago.com/v1/card_tokens', {
+      method: 'POST',
+      headers: mpAuthHeaders,
+      body: JSON.stringify({ card_id: order.mp_card_id }),
+    });
+    const cardTokenData = await cardTokenRes.json();
+    if (!cardTokenRes.ok) {
+      console.error('MP Upsell card_token error:', cardTokenData);
+      return res.status(400).json({ error: 'Upsell payment failed', details: cardTokenData });
+    }
+
+    // Charge the saved card for the upsell
     const upsellAmount = 49.90;
     const paymentData = {
       transaction_amount: upsellAmount,
       description: 'Upsell — Kit 2 Luminárias Solar Solare',
       payment_method_id: order.payment_method,
       installments: 1,
+      token: cardTokenData.id,
       payer: {
         email: order.customer_email,
         first_name: order.customer_name.split(' ')[0],
@@ -49,8 +67,6 @@ export default async function handler(req, res) {
           number: order.customer_cpf?.replace(/\D/g, ''),
         },
       },
-      customer_id: order.mp_customer_id,
-      card_id: order.mp_card_id,
       notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
       external_reference: `upsell-${orderId}-${Date.now()}`,
     };
@@ -58,8 +74,7 @@ export default async function handler(req, res) {
     const mpResponse = await fetch('https://api.mercadopago.com/v1/payments', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
+        ...mpAuthHeaders,
         'X-Idempotency-Key': `upsell-${orderId}-${Date.now()}`,
       },
       body: JSON.stringify(paymentData),

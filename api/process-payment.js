@@ -134,11 +134,74 @@ export default async function handler(req, res) {
       },
     };
 
+    // ── Salvar cartão no Mercado Pago (habilita o upsell 1-click) ──
+    // Só para o produto da home (Luminária Solar) — é o único com oferta de upsell.
+    let mpCustomerId = null;
+    let mpCardId = null;
+    let cardTokenForPayment = cardToken;
+
+    if (!isPix && productType === 'solar') {
+      try {
+        const mpAuthHeaders = {
+          'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
+          'Content-Type':  'application/json',
+        };
+        const normalizedEmail = customerEmail.trim().toLowerCase();
+
+        // 1) Encontra ou cria o customer no Mercado Pago
+        const searchRes = await fetch(`${MP_BASE}/v1/customers/search?email=${encodeURIComponent(normalizedEmail)}`, {
+          headers: mpAuthHeaders,
+        });
+        const searchData = await searchRes.json();
+        let customerId = searchData?.results?.[0]?.id;
+
+        if (!customerId) {
+          const createCustomerRes = await fetch(`${MP_BASE}/v1/customers`, {
+            method:  'POST',
+            headers: mpAuthHeaders,
+            body: JSON.stringify({ email: normalizedEmail, first_name: firstName, last_name: lastName }),
+          });
+          const createCustomerData = await createCustomerRes.json();
+          if (!createCustomerRes.ok) throw new Error(createCustomerData?.message || 'Falha ao criar customer');
+          customerId = createCustomerData.id;
+        }
+
+        // 2) Salva o cartão (token do checkout) nesse customer
+        const cardRes = await fetch(`${MP_BASE}/v1/customers/${customerId}/cards`, {
+          method:  'POST',
+          headers: mpAuthHeaders,
+          body: JSON.stringify({ token: cardToken }),
+        });
+        const cardData = await cardRes.json();
+        if (!cardRes.ok) throw new Error(cardData?.message || 'Falha ao salvar cartão');
+
+        // 3) Gera um token novo a partir do cartão salvo para cobrar AGORA
+        //    (o token original do formulário não pode ser reaproveitado)
+        const cardTokenRes = await fetch(`${MP_BASE}/v1/card_tokens`, {
+          method:  'POST',
+          headers: mpAuthHeaders,
+          body: JSON.stringify({ card_id: cardData.id }),
+        });
+        const cardTokenData = await cardTokenRes.json();
+        if (!cardTokenRes.ok) throw new Error(cardTokenData?.message || 'Falha ao gerar token do cartão salvo');
+
+        mpCustomerId = customerId;
+        mpCardId = cardData.id;
+        cardTokenForPayment = cardTokenData.id;
+      } catch (saveCardErr) {
+        // Não bloqueia a compra: sem cartão salvo, só perde a capacidade de upsell.
+        console.error('Salvar cartão para upsell falhou (não fatal):', saveCardErr);
+        mpCustomerId = null;
+        mpCardId = null;
+        cardTokenForPayment = cardToken;
+      }
+    }
+
     if (isPix) {
       paymentBody.payment_method_id = 'pix';
       paymentBody.date_of_expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
     } else {
-      paymentBody.token              = cardToken;
+      paymentBody.token              = cardTokenForPayment;
       paymentBody.payment_method_id  = cardPaymentMethodId || 'visa';
       paymentBody.installments       = parseInt(installments) || 1;
       paymentBody.capture            = true;
@@ -194,6 +257,8 @@ export default async function handler(req, res) {
       status:              paymentStatus,
       shipping_method:     shippingMethod,
       shipping_price:      shippingPrice,
+      mp_customer_id:      mpCustomerId,
+      mp_card_id:          mpCardId,
     };
 
     if (isPix) {
