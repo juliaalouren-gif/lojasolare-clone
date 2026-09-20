@@ -1685,7 +1685,7 @@
                 }
                 // Upsell é exclusivo do produto da home (Luminária Solar)
                 const dest = (result.orderId && productType === 'solar')
-                    ? `/upsell.html?orderId=${result.orderId}`
+                    ? `/upsell-v2.html?orderId=${result.orderId}`
                     : `/obrigado.html?id=${result.id}&type=card&total=${total}`;
                 gtag('event', 'conversion', {
                     'send_to': 'AW-17714329725/033BCIzz6JwcEP3w7P5B',
