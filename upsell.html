@@ -61,8 +61,12 @@
         .btn-upsell:hover { transform: scale(1.02); background: #16a34a; }
         .btn-upsell span { font-size: 13px; font-weight: 400; display: block; opacity: 0.9; margin-top: 4px; }
 
-        .btn-no { color: #9ca3af; text-decoration: underline; background: none; border: none; cursor: pointer; font-size: 14px; font-weight: 500; }
-        .btn-no:hover { color: #6b7280; }
+        .btn-no {
+            display: block; width: 100%; background: white; color: #4b5563;
+            padding: 18px; border-radius: 12px; font-size: 17px; font-weight: 700;
+            border: 2px solid #d1d5db; cursor: pointer; transition: background 0.2s, border-color 0.2s;
+        }
+        .btn-no:hover { background: #f3f4f6; border-color: #9ca3af; }
 
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -88,11 +92,11 @@
         <h1 class="wait-text">Sua compra foi aprovada!</h1>
         <p class="sub-wait">Temos uma oferta única e exclusiva para você que acaba de se tornar cliente Solare.</p>
 
-        <div class="offer-card">
+        <div class="offer-card" id="offer-upsell">
             <div class="badge">OFERTA VIP</div>
-            
+
             <img src="luminaria-warm.jpg" alt="Luminária Solar Solare" class="product-img">
-            
+
             <h2 class="product-title">Leve mais 2 unidades com preço de fábrica</h2>
             <p class="product-desc">
                 Adicione mais 2 luminárias solares ao seu pedido agora e transforme completamente seu espaço externo. Esta oferta é válida <b>apenas por 5 minutos</b> e não será mostrada novamente.
@@ -104,16 +108,45 @@
                 <p style="font-size: 12px; color: #059669; font-weight: 700;">FRETE GRÁTIS INCLUSO</p>
             </div>
 
-            <button onclick="processUpsell()" class="btn-upsell">
+            <button onclick="processUpsell('upsell')" class="btn-upsell">
                 SIM! ADICIONAR AO MEU PEDIDO
                 <span>Clique único: cobrado no mesmo cartão finalizado</span>
             </button>
 
-            <button onclick="skipUpsell()" class="btn-no">Não obrigado, quero apenas o que já comprei.</button>
+            <button onclick="showDownsell()" class="btn-no">Não obrigado, quero apenas o que já comprei</button>
 
             <div class="saving-alert">
                 <i class="fas fa-percent"></i>
                 Você está economizando R$ 80,00 nesse momento!
+            </div>
+        </div>
+
+        <div class="offer-card" id="offer-downsell" style="display:none;">
+            <div class="badge">ÚLTIMA CHANCE</div>
+
+            <img src="luminaria-warm.jpg" alt="Luminária Solar Solare" class="product-img">
+
+            <h2 class="product-title">Espera! Que tal por um preço ainda menor?</h2>
+            <p class="product-desc">
+                Entendemos que R$ 49,90 pode não caber agora. Por ser sua única chance, liberamos mais 2 luminárias solares por um valor ainda mais baixo. Depois desta tela, a oferta some.
+            </p>
+
+            <div class="price-box">
+                <p class="old-price">De R$ 129,90</p>
+                <p class="new-price"><span>R$</span> 39,90</p>
+                <p style="font-size: 12px; color: #059669; font-weight: 700;">FRETE GRÁTIS INCLUSO</p>
+            </div>
+
+            <button onclick="processUpsell('downsell')" class="btn-upsell">
+                SIM! ADICIONAR POR R$ 39,90
+                <span>Clique único: cobrado no mesmo cartão finalizado</span>
+            </button>
+
+            <button onclick="skipUpsell()" class="btn-no">Não, obrigado. Quero apenas o que já comprei.</button>
+
+            <div class="saving-alert">
+                <i class="fas fa-percent"></i>
+                Você está economizando R$ 90,00 nesse momento!
             </div>
         </div>
     </div>
@@ -130,7 +163,13 @@
         const params = new URLSearchParams(window.location.search);
         const orderId = params.get('orderId');
 
-        async function processUpsell() {
+        function showDownsell() {
+            document.getElementById('offer-upsell').style.display = 'none';
+            document.getElementById('offer-downsell').style.display = 'block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        async function processUpsell(offer) {
             if (!orderId) {
                 window.location.href = 'obrigado.html?status=approved';
                 return;
@@ -142,7 +181,7 @@
                 const response = await fetch('/api/process-upsell', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ orderId })
+                    body: JSON.stringify({ orderId, offer })
                 });
 
                 const result = await response.json();

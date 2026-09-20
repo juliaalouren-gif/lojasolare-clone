@@ -10,8 +10,12 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { orderId } = req.body;
+    const { orderId, offer } = req.body;
     if (!orderId) return res.status(400).json({ error: 'Missing orderId' });
+
+    // Preço decidido no servidor — nunca confiar em valor vindo do cliente
+    const OFFER_PRICES = { upsell: 49.90, downsell: 39.90 };
+    const upsellAmount = OFFER_PRICES[offer] ?? OFFER_PRICES.upsell;
 
     // Fetch original order from Supabase
     const { data: order, error: fetchError } = await supabase
@@ -51,10 +55,11 @@ export default async function handler(req, res) {
     }
 
     // Charge the saved card for the upsell
-    const upsellAmount = 49.90;
     const paymentData = {
       transaction_amount: upsellAmount,
-      description: 'Upsell — Kit 2 Luminárias Solar Solare',
+      description: offer === 'downsell'
+        ? 'Downsell — Kit 2 Luminárias Solar Solare'
+        : 'Upsell — Kit 2 Luminárias Solar Solare',
       payment_method_id: order.payment_method,
       installments: 1,
       token: cardTokenData.id,
