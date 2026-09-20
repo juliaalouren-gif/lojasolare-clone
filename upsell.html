@@ -67,6 +67,7 @@
             border: 2px solid #d1d5db; cursor: pointer; transition: background 0.2s, border-color 0.2s;
         }
         .btn-no:hover { background: #f3f4f6; border-color: #9ca3af; }
+        .btn-upsell:disabled, .btn-no:disabled { opacity: 0.5; cursor: not-allowed; animation: none; pointer-events: none; }
 
         @keyframes pulse {
             0% { transform: scale(1); }
@@ -165,8 +166,16 @@
 
         function showDownsell() {
             document.getElementById('offer-upsell').style.display = 'none';
-            document.getElementById('offer-downsell').style.display = 'block';
+            const downsell = document.getElementById('offer-downsell');
+            downsell.style.display = 'block';
             window.scrollTo({ top: 0, behavior: 'smooth' });
+
+            // Trava os botões da nova oferta por um instante: em celular, um
+            // toque rápido em sequência no mesmo lugar pode acabar ativando
+            // o botão que acabou de aparecer aí, sem a pessoa perceber a troca.
+            const downsellButtons = downsell.querySelectorAll('button');
+            downsellButtons.forEach(btn => btn.disabled = true);
+            setTimeout(() => downsellButtons.forEach(btn => btn.disabled = false), 800);
         }
 
         async function processUpsell(offer) {
