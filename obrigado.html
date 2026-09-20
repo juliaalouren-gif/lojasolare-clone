@@ -165,6 +165,8 @@
     const reminder2hId = params.get('reminder_2h_id') || '';
     const reminder4hId = params.get('reminder_4h_id') || '';
     const isUpsell = params.get('upsell') === 'true';
+    const orderId = params.get('orderId') || '';
+    const productType = params.get('product') || '';
     const orderTotal = parseFloat(params.get('total') || '0');
 
     // Pix: QR Code gerado — dispara apenas UMA vez por payment_id (evita redisparo em refresh)
@@ -260,12 +262,35 @@
 
                 if (data.status === 'approved') {
                     clearInterval(interval);
-                    showSuccess();
+                    if (shouldOfferUpsell()) {
+                        goToPixUpsell();
+                    } else {
+                        showSuccess();
+                    }
                 }
             } catch (e) {
                 console.error('Erro polling:', e);
             }
         }, 5000); // Check every 5 seconds
+    }
+
+    // Upsell após Pix aprovado: só para o produto da home, e uma única vez por pedido
+    function shouldOfferUpsell() {
+        if (productType !== 'solar' || !orderId) return false;
+        try { return !localStorage.getItem('upsell_offered_' + orderId); } catch (e) { return true; }
+    }
+
+    function goToPixUpsell() {
+        try { localStorage.setItem('upsell_offered_' + orderId, '1'); } catch (e) {}
+        document.getElementById('urgency-banner').style.display = 'none';
+        document.getElementById('pix-area').style.display = 'none';
+        document.getElementById('status-icon').className = 'icon success';
+        document.getElementById('status-icon').innerHTML = '<i class="fas fa-check-circle"></i>';
+        document.getElementById('status-title').innerText = 'Pix Confirmado!';
+        document.getElementById('status-desc').innerText = 'Só um instante, liberando uma condição especial para você...';
+        setTimeout(function () {
+            window.location.href = '/upsell-pix.html?orderId=' + encodeURIComponent(orderId);
+        }, 1200);
     }
 
     function showSuccess() {

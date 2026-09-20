@@ -73,8 +73,8 @@ export default async function handler(req, res) {
             orderId:        order.id,
           }).catch(e => console.error('[SyncPix] notifyPaymentApproved failed:', e));
 
-          // Agenda emails pós-compra (3h e 2 dias)
-          await schedulePostPurchaseEmails({
+          // Agenda emails pós-compra (3h e 2 dias) — não repete para venda adicional (upsell)
+          if (order.customer_address?.upsell !== true) await schedulePostPurchaseEmails({
             customerName:  order.customer_name,
             customerEmail: order.customer_email,
             orderId:       order.id,

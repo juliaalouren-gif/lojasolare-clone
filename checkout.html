@@ -1761,7 +1761,7 @@
                 const reminderParam    = result.pix_reminder_id    ? `&reminder_id=${encodeURIComponent(result.pix_reminder_id)}`       : '';
                 const reminder2hParam  = result.pix_reminder_2h_id ? `&reminder_2h_id=${encodeURIComponent(result.pix_reminder_2h_id)}` : '';
                 const reminder4hParam  = result.pix_reminder_4h_id ? `&reminder_4h_id=${encodeURIComponent(result.pix_reminder_4h_id)}` : '';
-                window.location.href = `/obrigado.html?status=pending&type=pix&id=${result.id}&total=${pixTotal}&qr_code=${encodeURIComponent(result.qr_code)}&qr_code_base64=${encodeURIComponent(result.qr_code_base64 || '')}${reminderParam}${reminder2hParam}${reminder4hParam}`;
+                window.location.href = `/obrigado.html?status=pending&type=pix&id=${result.id}&total=${pixTotal}&qr_code=${encodeURIComponent(result.qr_code)}&qr_code_base64=${encodeURIComponent(result.qr_code_base64 || '')}${reminderParam}${reminder2hParam}${reminder4hParam}&orderId=${encodeURIComponent(result.orderId || '')}&product=${encodeURIComponent(productType)}`;
             } else {
                 const cause = result.error || 'Erro desconhecido';
                 console.error('Pix error:', result);

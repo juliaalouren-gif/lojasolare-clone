@@ -100,7 +100,7 @@ export default async function handler(req, res) {
               orderId:        fullOrder.id,
             }).catch(e => console.error('[Sync] Email confirmação falhou:', e));
 
-            schedulePostPurchaseEmails({
+            if (fullOrder.customer_address?.upsell !== true) schedulePostPurchaseEmails({
               customerName:  fullOrder.customer_name,
               customerEmail: fullOrder.customer_email,
               orderId:       fullOrder.id,

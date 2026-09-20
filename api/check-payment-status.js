@@ -66,8 +66,8 @@ export default async function handler(req, res) {
           orderId:       order.id,
         }).catch(e => console.error('Email notification failed:', e));
 
-        // Agendar emails pós-compra (3h e 2 dias)
-        schedulePostPurchaseEmails({
+        // Agendar emails pós-compra (3h e 2 dias) — não repete para venda adicional (upsell)
+        if (order.customer_address?.upsell !== true) schedulePostPurchaseEmails({
           customerName:  order.customer_name,
           customerEmail: order.customer_email,
           orderId:       order.id,

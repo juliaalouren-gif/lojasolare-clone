@@ -127,10 +127,13 @@ export default async function handler(req, res) {
 
     // Send notifications based on status
     if (order) {
+      // Venda adicional (upsell/downsell): o cliente já recebeu o WhatsApp e os
+      // e-mails de pós-compra do pedido principal, então não repete.
+      const isUpsellOrder = order.customer_address?.upsell === true;
       if (newStatus === 'approved') {
         const firstName = (order.customer_name || '').trim().split(' ')[0];
         // For card payments already approved synchronously, avoid double WhatsApp
-        if (previousStatus !== 'approved') await sendWhatsApp(order.customer_phone,
+        if (previousStatus !== 'approved' && !isUpsellOrder) await sendWhatsApp(order.customer_phone,
           `Olá ${firstName}, seu pedido foi confirmado e logo sairá para entrega, lembrando que nosso prazo de entrega é de 8 dias`
         ).catch(() => {});
 
@@ -143,7 +146,7 @@ export default async function handler(req, res) {
           orderId: order.id,
         });
 
-        schedulePostPurchaseEmails({
+        if (!isUpsellOrder) schedulePostPurchaseEmails({
           customerName:  order.customer_name,
           customerEmail: order.customer_email,
           orderId:       order.id,
@@ -174,7 +177,7 @@ export default async function handler(req, res) {
           },
           eventId: `purchase-${paymentId}`,
         }).catch(e => console.error('Meta CAPI Purchase (webhook) failed:', e));
-      } else if (newStatus === 'cancelled') {
+      } else if (newStatus === 'cancelled' && !isUpsellOrder) {
         await notifyPixExpired({
           customerName: order.customer_name,
           customerEmail: order.customer_email,
