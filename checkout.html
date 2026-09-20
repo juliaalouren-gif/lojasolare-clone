@@ -1620,7 +1620,7 @@
             } catch (_) { /* usa visa como fallback */ }
 
             // Tokenizar cartão via SDK Mercado Pago
-            const tokenResult = await mp.createCardToken({
+            const cardFields = {
                 cardNumber:           number,
                 cardholderName:       holder.toUpperCase(),
                 cardExpirationMonth:  expMonth,
@@ -1628,7 +1628,15 @@
                 securityCode:         cvv,
                 identificationType:   'CPF',
                 identificationNumber: cpfDigits,
-            });
+            };
+            const tokenResult = await mp.createCardToken(cardFields);
+
+            // Segundo token, só para salvar o cartão (upsell 1-click da home).
+            // Falhar aqui nunca atrapalha a compra.
+            let saveCardToken = null;
+            if (productType === 'solar') {
+                try { saveCardToken = (await mp.createCardToken(cardFields))?.id || null; } catch (_) {}
+            }
 
             if (!tokenResult?.id) {
                 const cause = tokenResult?.cause?.[0]?.description || 'Dados do cartão inválidos.';
@@ -1657,6 +1665,7 @@
                     totalPrice:          price + selectedShippingPrice + getBumpTotal(),
                     paymentMethodId:     'credit_card',
                     cardToken:           tokenResult.id,
+                    saveCardToken:       saveCardToken,
                     cardPaymentMethodId: cardPaymentMethodId,
                     installments:        installments,
                     shippingMethod:      selectedShippingName,

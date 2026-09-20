@@ -49,7 +49,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { orderId, offer } = req.body || {};
+    const { orderId, offer, cvv } = req.body || {};
     if (!orderId) return res.status(400).json({ error: 'Missing orderId' });
 
     const upsellAmount = OFFER_PRICES[offer] ?? OFFER_PRICES.upsell;
@@ -148,14 +148,22 @@ export default async function handler(req, res) {
 
     // Gera um token novo a partir do cartão salvo — o pagamento exige um
     // "token" (o card_id sozinho não é aceito pelo endpoint de pagamentos).
+    // Se o Mercado Pago exigir o CVV, a página pede só esses dígitos e reenvia.
+    const tokenBody = { card_id: order.mp_card_id };
+    const cvvDigits = String(cvv || '').replace(/\D/g, '');
+    if (/^\d{3,4}$/.test(cvvDigits)) tokenBody.security_code = cvvDigits;
+
     const cardTokenRes = await fetch(`${MP_BASE}/v1/card_tokens`, {
       method: 'POST',
       headers: mpAuthHeaders,
-      body: JSON.stringify({ card_id: order.mp_card_id }),
+      body: JSON.stringify(tokenBody),
     });
     const cardTokenData = await cardTokenRes.json();
     if (!cardTokenRes.ok) {
       console.error('MP Upsell card_token error:', cardTokenData);
+      if (!tokenBody.security_code) {
+        return res.status(400).json({ error: 'CVV_REQUIRED', needs_cvv: true });
+      }
       return res.status(400).json({ error: 'Upsell payment failed', details: cardTokenData });
     }
 
