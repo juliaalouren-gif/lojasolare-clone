@@ -191,19 +191,6 @@
 
                         <p class="subtitle">Selecione as opções abaixo para ver o desconto exclusivo</p>
 
-                        <!-- Option: Light color -->
-                        <div class="option-group">
-                            <label>Formato:</label>
-                            <div class="variant-grid">
-                                <button class="variant-btn active" data-type="light" data-value="warm" onclick="selectVariant(this, 'light')">
-                                    <span class="color-circle warm"></span> Modelo Quadrado
-                                </button>
-                                <button class="variant-btn" data-type="light" data-value="white" onclick="selectVariant(this, 'light')">
-                                    <span class="color-circle white"></span> Modelo Redondo
-                                </button>
-                            </div>
-                        </div>
-
                         <!-- Option: Kit -->
                         <div class="option-group">
                             <label>Escolha seu kit:</label>
@@ -801,27 +788,11 @@
     <script src="script.js?v=1.9" defer></script>
     <script>
     window.addEventListener('DOMContentLoaded', function() {
-        // Produto diferente do padrão do script.js: troca as imagens do
-        // seletor de variante e a identidade enviada ao pixel/checkout.
-        window.selectVariant = function(element, type) {
-            var parent = element.parentElement;
-            parent.querySelectorAll('.variant-btn').forEach(function (btn) { btn.classList.remove('active'); });
-            element.classList.add('active');
-            if (type === 'light') {
-                var val = element.getAttribute('data-value');
-                currentSelectedLight = val;
-                window.currentSelectedLight = val;
-                if (val === 'warm') {
-                    updateMainImage('jardim-principal.jpg', document.querySelector('.thumb:nth-child(1)'));
-                } else {
-                    updateMainImage('jardim-frente.jpg', document.querySelector('.thumb:nth-child(2)'));
-                }
-            }
-        };
-
+        // Produto diferente do padrão do script.js: sem seletor de formato
+        // nesta página, então o checkout sempre recebe light='warm' e a
+        // identidade correta vai pro pixel/checkout.
         window.handleCheckout = function() {
-            var activeLight = document.querySelector('.variant-btn.active[data-value]');
-            var light = activeLight ? activeLight.getAttribute('data-value') : 'warm';
+            var light = 'warm';
             if (typeof fbq !== 'undefined') {
                 fbq('track', 'AddToCart', {
                     content_name: 'Luminária Solar Externa de Jardim',
