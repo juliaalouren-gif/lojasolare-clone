@@ -1198,7 +1198,7 @@
     const price = parseFloat(urlParams.get('price') || '8.00');
     const light = urlParams.get('light') || 'warm';
     const productType = urlParams.get('product') || 'solar';
-    const productNameMap = { solar: 'Luminária Solar Solare', led: 'Luminária LED Sem Fio Solare', 'lampada-led': 'Lâmpada LED Solar Max' };
+    const productNameMap = { solar: 'Luminária Solar Solare', led: 'Luminária LED Sem Fio Solare', 'lampada-led': 'Lâmpada LED Solar Max', jardim: 'Luminária Solar Externa de Jardim' };
     const productName = productNameMap[productType] || 'Luminária Solar Solare';
     let selectedShippingPrice = 0;
     let selectedShippingName = 'Envio Regular (Grátis)';
@@ -1277,6 +1277,9 @@
     } else if (productType === 'lampada-led') {
         document.getElementById('sum-img').src = 'https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670';
         document.getElementById('sum-title').textContent = 'Lâmpada LED Solar Max';
+    } else if (productType === 'jardim') {
+        document.getElementById('sum-img').src = light === 'warm' ? 'jardim-principal.jpg' : 'jardim-frente.jpg';
+        document.getElementById('sum-title').textContent = 'Luminária Solar Externa de Jardim';
     } else {
         document.getElementById('sum-img').src = light === 'warm' ? 'luminaria-warm.jpg' : 'luminaria-white.jpg';
     }
