@@ -860,23 +860,29 @@
     <script src="script.js?v=1.9" defer></script>
     <script>
     // Seletor de formato: troca a imagem principal + miniatura ativa
+    // (retangular usa jardim-principal.jpg, que não tem miniatura própria na galeria)
     var FORMATO_IMG = {
-        retangular: 'capalumina.jpg',
-        circular:   'jardim-frente.jpg',
-        quadrada:   'jardim-detalhe.jpg',
+        retangular: 'jardim-principal.jpg',
+        circular:   'jardim-caminho.jpg',
+        quadrada:   'capalumina.jpg',
     };
     var FORMATO_THUMB = {
-        retangular: 1,
-        circular:   2,
-        quadrada:   4,
+        retangular: null,
+        circular:   3,
+        quadrada:   1,
     };
     function selectFormato(el) {
         var parent = el.parentElement;
         parent.querySelectorAll('.variant-btn').forEach(function (btn) { btn.classList.remove('active'); });
         el.classList.add('active');
         var val = el.getAttribute('data-value');
-        var thumb = document.querySelector('.thumb:nth-child(' + FORMATO_THUMB[val] + ')');
-        updateMainImage(FORMATO_IMG[val], thumb);
+        var thumbIndex = FORMATO_THUMB[val];
+        document.getElementById('variant-image').src = FORMATO_IMG[val];
+        document.querySelectorAll('.thumb').forEach(function (t) { t.classList.remove('active'); });
+        if (thumbIndex) {
+            var thumb = document.querySelector('.thumb:nth-child(' + thumbIndex + ')');
+            if (thumb) thumb.classList.add('active');
+        }
     }
 
     window.addEventListener('DOMContentLoaded', function() {
