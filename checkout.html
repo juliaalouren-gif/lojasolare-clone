@@ -1578,7 +1578,7 @@
         this.value = this.value.replace(/\D/g, '').slice(0, 4);
     });
 
-    // ── CARD PAYMENT (MercadoPago SDK) ───────────────────
+    // ── CARD PAYMENT (migração pra Stone/Pagar.me em andamento — ainda usa o SDK do Mercado Pago) ───────────────────
     let _mpInstance = null;
     async function getMpInstance() {
         if (_mpInstance) return _mpInstance;
