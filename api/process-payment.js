@@ -147,6 +147,23 @@ export default async function handler(req, res) {
     const charge = pagarmeResult.charges?.[0];
     const paymentStatus = mapChargeStatus(charge?.status);
 
+    // Mesmo com HTTP 200, a cobrança em si pode ter sido recusada (cartão
+    // negado, chave Pix ausente/errada na conta Stone, etc.). O motivo técnico
+    // sempre vai pro log do servidor; pro cliente só expomos o motivo cru em
+    // cartão (ele já espera ver "cartão recusado" e pode tentar outro) — no
+    // Pix, que o cliente não controla, mostramos uma mensagem genérica.
+    let rejectionReason = null;
+    if (paymentStatus === 'rejected') {
+      const lt = charge?.last_transaction;
+      const technicalReason = lt?.gateway_response?.errors?.[0]?.message
+        || lt?.acquirer_message
+        || 'Pagamento recusado.';
+      console.warn('[Pagar.me] Cobrança recusada', { chargeId: charge?.id, status: charge?.status, technicalReason });
+      rejectionReason = isPix
+        ? 'Não foi possível gerar o Pix no momento. Tente novamente em instantes ou use o cartão.'
+        : technicalReason;
+    }
+
     // ── Salvar no Supabase ────────────────────────────────
     // Reaproveita as colunas mp_* (antes do Mercado Pago) para os IDs da Pagar.me.
     const orderData = {
@@ -262,6 +279,7 @@ export default async function handler(req, res) {
     return res.status(200).json({
       success:         true,
       status:          paymentStatus,
+      error:           rejectionReason,
       id:              charge?.id || pagarmeResult.id,
       orderId:         order?.id || null,
       qr_code:         isPix ? qrCode : null,
