@@ -159,7 +159,7 @@
     const status = params.get('status');
     const type = params.get('type');
     const pixCode = params.get('qr_code');
-    const pixImg = params.get('qr_code_base64');
+    const pixImg = params.get('qr_code_url');
     const paymentId = params.get('id');
     const reminderId   = params.get('reminder_id')    || '';
     const reminder2hId = params.get('reminder_2h_id') || '';
@@ -203,9 +203,7 @@
         document.getElementById('status-title').innerText = 'Aguardando Pagamento';
         document.getElementById('status-desc').innerText = 'Para finalizar, pague o Pix abaixo:';
         document.getElementById('pix-area').style.display = 'block';
-        document.getElementById('qr-img').src = pixImg
-            ? (pixImg.startsWith('data:') ? pixImg : 'data:image/png;base64,' + pixImg)
-            : '';
+        document.getElementById('qr-img').src = pixImg || '';
         document.getElementById('pix-code').innerText = pixCode;
 
         // Iniciar polling para Pix

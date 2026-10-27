@@ -315,9 +315,7 @@
             pixCode = result.qr_code;
             document.getElementById('pix-offer-label').innerText = '+2 luminárias no seu pedido por ' + OFFERS[offer].price;
             document.getElementById('pix-code').innerText = pixCode;
-            document.getElementById('qr-img').src = result.qr_code_base64
-                ? (result.qr_code_base64.startsWith('data:') ? result.qr_code_base64 : 'data:image/png;base64,' + result.qr_code_base64)
-                : '';
+            document.getElementById('qr-img').src = result.qr_code_url || '';
             document.getElementById('btn-copy').innerText = 'COPIAR CÓDIGO PIX';
             document.getElementById('pix-body').hidden = false;
             document.getElementById('pix-timer').hidden = false;

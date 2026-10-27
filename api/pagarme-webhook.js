@@ -2,38 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
-import crypto from 'crypto';
-
-function verifyMpSignature(req, paymentId) {
-  const secret = process.env.MP_WEBHOOK_SECRET;
-  if (!secret) return true;
-
-  const xSignature = req.headers['x-signature'];
-  const xRequestId = req.headers['x-request-id'];
-  if (!xSignature || !xRequestId) return false;
-
-  const parts = {};
-  xSignature.split(',').forEach(part => {
-    const idx = part.indexOf('=');
-    if (idx !== -1) {
-      const k = part.slice(0, idx).trim();
-      const v = part.slice(idx + 1).trim();
-      if (k && v) parts[k] = v;
-    }
-  });
-
-  const { ts, v1: hash } = parts;
-  if (!ts || !hash) return false;
-
-  const manifest = `id:${paymentId};request-id:${xRequestId};ts:${ts}`;
-  const expected = crypto.createHmac('sha256', secret).update(manifest).digest('hex');
-
-  try {
-    return crypto.timingSafeEqual(Buffer.from(hash, 'hex'), Buffer.from(expected, 'hex'));
-  } catch {
-    return false;
-  }
-}
+import { mapChargeStatus } from '../lib/pagarme.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -41,57 +10,32 @@ const supabase = createClient(
 );
 
 export default async function handler(req, res) {
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method === 'OPTIONS') return res.status(200).end();
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
-    const { type, data } = req.body;
-
-    if (type !== 'payment') {
-      return res.status(200).json({ message: 'Ignored' });
+    // A Pagar.me não documenta assinatura HMAC de webhook (diferente do
+    // Mercado Pago), então a URL configurada no painel carrega um segredo
+    // próprio: .../api/pagarme-webhook?secret=XXXX
+    const expectedSecret = process.env.PAGARME_WEBHOOK_SECRET;
+    if (expectedSecret && req.query?.secret !== expectedSecret) {
+      console.warn('[Webhook] Segredo inválido na URL — ignorando');
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
-    const paymentId = data?.id;
-    if (!paymentId) {
-      return res.status(400).end();
+    const { type, data } = req.body || {};
+    if (!type || !data) return res.status(200).json({ message: 'Ignored' });
+
+    // Só processamos eventos de charge (cobrança) — é o que guardamos como
+    // mp_payment_id. Eventos de order.* são ignorados para não duplicar.
+    if (!type.startsWith('charge.')) {
+      return res.status(200).json({ message: 'Ignored', type });
     }
 
-    if (process.env.MP_WEBHOOK_SECRET && !verifyMpSignature(req, paymentId)) {
-      console.warn('[Webhook] Signature mismatch — processing anyway', {
-        xSignature: req.headers['x-signature'],
-        xRequestId: req.headers['x-request-id'],
-        paymentId,
-      });
-    }
+    const paymentId = data.id;
+    if (!paymentId) return res.status(400).end();
 
-    const mpResponse = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
-      headers: {
-        'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}`,
-      },
-    });
-
-    if (!mpResponse.ok) {
-      console.error('[Webhook] MP API error fetching payment', { paymentId, status: mpResponse.status });
-      return res.status(200).json({ status: 'mp_api_error' });
-    }
-
-    const payment = await mpResponse.json();
-    
-    const statusMap = {
-      approved: 'approved',
-      rejected: 'rejected',
-      pending: 'pending',
-      in_process: 'pending',
-      cancelled: 'cancelled',
-      refunded: 'cancelled',
-    };
-
-    const newStatus = statusMap[payment.status] || 'pending';
+    const newStatus = mapChargeStatus(data.status);
 
     // Fetch the order from Supabase to get customer info for notifications
     const { data: order } = await supabase
@@ -104,7 +48,7 @@ export default async function handler(req, res) {
 
     // Never downgrade a paid order — if already approved, ignore cancelled/rejected webhooks
     if (previousStatus === 'approved' && newStatus !== 'approved') {
-      console.log(`[Webhook] Ignoring status downgrade approved → ${newStatus} for payment ${paymentId}`);
+      console.log(`[Webhook] Ignoring status downgrade approved → ${newStatus} for charge ${paymentId}`);
       return res.status(200).json({ updated: false, reason: 'already_approved' });
     }
 

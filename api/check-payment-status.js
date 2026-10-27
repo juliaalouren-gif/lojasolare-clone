@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, cancelPixReminder, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
+import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus } from '../lib/pagarme.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -28,17 +29,17 @@ export default async function handler(req, res) {
       return res.status(200).json({ status: 'approved' });
     }
 
-    // 2. Consultar diretamente a API do Mercado Pago
-    const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${payment_id}`, {
-      headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+    // 2. Consultar diretamente a API da Pagar.me/Stone
+    const pagarmeRes = await fetch(`${PAGARME_BASE}/charges/${payment_id}`, {
+      headers: pagarmeAuthHeader(),
     });
 
-    if (!mpRes.ok) {
+    if (!pagarmeRes.ok) {
       return res.status(200).json({ status: order?.status || 'pending' });
     }
 
-    const mpData = await mpRes.json();
-    const mpStatus = mpData.status;
+    const chargeData = await pagarmeRes.json();
+    const mpStatus = mapChargeStatus(chargeData.status);
 
     if (mpStatus === 'approved') {
       // Atualizar Supabase

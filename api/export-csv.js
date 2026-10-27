@@ -99,7 +99,7 @@ export default async function handler(req, res) {
     const headers = [
       'Data/Hora', 'Nome', 'E-mail', 'CPF', 'Telefone',
       'Endereço', 'Produto', 'Qtd', 'Cor da Luz', 'Valor', 'Frete (Método)', 'Frete (Valor)',
-      'Pagamento', 'Status', 'ID Mercado Pago', 'Feito', 'Rastreio'
+      'Pagamento', 'Status', 'ID da Cobrança (Stone)', 'Feito', 'Rastreio'
     ];
 
     const rows = orders.map(o => [

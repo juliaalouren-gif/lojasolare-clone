@@ -9,6 +9,7 @@
 
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus } from '../lib/pagarme.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -48,15 +49,15 @@ export default async function handler(req, res) {
 
     for (const order of pendingOrders) {
       try {
-        const mpRes = await fetch(`https://api.mercadopago.com/v1/payments/${order.mp_payment_id}`, {
-          headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+        const chargeRes = await fetch(`${PAGARME_BASE}/charges/${order.mp_payment_id}`, {
+          headers: pagarmeAuthHeader(),
         });
 
-        if (!mpRes.ok) continue;
+        if (!chargeRes.ok) continue;
 
-        const mpData = await mpRes.json();
+        const chargeData = await chargeRes.json();
 
-        if (mpData.status === 'approved') {
+        if (mapChargeStatus(chargeData.status) === 'approved') {
           // Atualiza Supabase
           await supabase
             .from('orders')

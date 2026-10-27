@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus } from '../lib/pagarme.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -7,15 +8,6 @@ const supabase = createClient(
 );
 
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'solare@2024';
-
-const MP_STATUS_MAP = {
-  approved:   'approved',
-  rejected:   'rejected',
-  cancelled:  'cancelled',
-  refunded:   'cancelled',
-  in_process: 'pending',
-  pending:    'pending',
-};
 
 const PB_STATUS_MAP = {
   PAID:        'approved',
@@ -66,13 +58,13 @@ export default async function handler(req, res) {
             newStatus = PB_STATUS_MAP[pbStatus] || null;
           }
         } else {
-          // Mercado Pago (payment IDs numéricos)
-          const r = await fetch(`https://api.mercadopago.com/v1/payments/${pid}`, {
-            headers: { 'Authorization': `Bearer ${process.env.MP_ACCESS_TOKEN}` },
+          // Pagar.me/Stone (charge IDs no formato ch_...)
+          const r = await fetch(`${PAGARME_BASE}/charges/${pid}`, {
+            headers: pagarmeAuthHeader(),
           });
           if (r.ok) {
             const d = await r.json();
-            newStatus = MP_STATUS_MAP[d.status] || null;
+            newStatus = mapChargeStatus(d.status);
           }
         }
 

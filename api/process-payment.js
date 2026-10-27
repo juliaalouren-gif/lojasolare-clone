@@ -4,14 +4,12 @@ import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-n
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
+import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus, buildPagarmeCustomer } from '../lib/pagarme.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-const MP_ACCESS_TOKEN = process.env.MP_ACCESS_TOKEN;
-const MP_BASE = 'https://api.mercadopago.com';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -30,12 +28,10 @@ export default async function handler(req, res) {
       paymentMethodId,
       cardToken,
       saveCardToken,
-      cardPaymentMethodId,
       installments,
       shippingMethod,
       shippingPrice,
       orderBumps,
-      deviceId,
       productName,
       productType,
     } = req.body;
@@ -93,103 +89,66 @@ export default async function handler(req, res) {
     const firstName  = nameParts[0];
     const lastName   = nameParts.slice(1).join(' ') || firstName;
     const internalOrderId = randomUUID();
+    const amountCents = Math.round(parsedTotal * 100);
 
-    // ── Montar pagamento Mercado Pago ──────────────────────
-    const paymentBody = {
-      transaction_amount: parsedTotal,
-      description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
-      notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
-      external_reference: internalOrderId,
-      statement_descriptor: 'Solare Luminarias',
-      additional_info: {
-        items: [{
-          id: 'solare-luminaria',
-          title: `Luminária Solar LED Solare — Kit ${parsedQty} unidades`,
-          description: 'Luminária solar LED recarregável, resistente à água, sem fio. Acende automaticamente à noite.',
-          category_id: 'home',
-          quantity: 1,
-          unit_price: parsedTotal,
-        }],
-        payer: {
-          first_name: firstName,
-          last_name:  lastName,
-          address: {
-            zip_code:      String(customerAddress?.cep || '').replace(/\D/g, ''),
-            street_name:   customerAddress?.street || customerAddress?.logradouro || '',
-            street_number: String(customerAddress?.number || customerAddress?.numero || ''),
-          },
-        },
-        shipments: {
-          receiver_address: {
-            zip_code:    String(customerAddress?.cep || '').replace(/\D/g, ''),
-            state_name:  customerAddress?.state || '',
-            city_name:   customerAddress?.city  || '',
-            street_name: customerAddress?.street || customerAddress?.logradouro || '',
-            street_number: String(customerAddress?.number || customerAddress?.numero || ''),
-          },
-        },
-      },
-      payer: {
-        email:      customerEmail.trim().toLowerCase(),
-        first_name: firstName,
-        last_name:  lastName,
-        identification: {
-          type:   'CPF',
-          number: cpfDigits,
-        },
-        address: {
-          zip_code:      String(customerAddress?.cep || '').replace(/\D/g, ''),
-          street_name:   customerAddress?.street || customerAddress?.logradouro || '',
-          street_number: String(customerAddress?.number || customerAddress?.numero || ''),
-        },
-      },
+    // ── Montar pedido Pagar.me/Stone ───────────────────────
+    const orderBody = {
+      items: [{
+        amount: amountCents,
+        description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
+        quantity: 1,
+        code: 'solare-luminaria',
+      }],
+      customer: buildPagarmeCustomer({
+        name: customerName, email: customerEmail, cpf: cpfDigits,
+        phone: customerPhone, address: customerAddress,
+      }),
+      metadata: { internal_order_id: internalOrderId },
     };
 
     if (isPix) {
-      paymentBody.payment_method_id = 'pix';
-      paymentBody.date_of_expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString();
+      orderBody.payments = [{
+        payment_method: 'pix',
+        pix: { expires_in: 1800 }, // 30 minutos, igual ao fluxo anterior
+      }];
     } else {
-      paymentBody.token              = cardToken;
-      paymentBody.payment_method_id  = cardPaymentMethodId || 'visa';
-      paymentBody.installments       = parseInt(installments) || 1;
-      paymentBody.capture            = true;
+      orderBody.payments = [{
+        payment_method: 'credit_card',
+        credit_card: {
+          installments: parseInt(installments) || 1,
+          statement_descriptor: 'SOLARE',
+          card_token: cardToken,
+        },
+      }];
     }
 
-    // ── Chamar API Mercado Pago ────────────────────────────
-    const mpHeaders = {
-      'Authorization':    `Bearer ${MP_ACCESS_TOKEN}`,
-      'Content-Type':     'application/json',
-      'X-Idempotency-Key': `solare-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    // ── Chamar API Pagar.me ────────────────────────────────
+    const pagarmeHeaders = {
+      ...pagarmeAuthHeader(),
+      'Content-Type': 'application/json',
+      'Idempotency-Key': `solare-${internalOrderId}`,
     };
-    if (deviceId && typeof deviceId === 'string' && deviceId.length > 0) {
-      mpHeaders['X-Meli-Session-Id'] = deviceId;
-    }
-    const mpResponse = await fetch(`${MP_BASE}/v1/payments`, {
+    const pagarmeResponse = await fetch(`${PAGARME_BASE}/orders`, {
       method:  'POST',
-      headers: mpHeaders,
-      body: JSON.stringify(paymentBody),
+      headers: pagarmeHeaders,
+      body: JSON.stringify(orderBody),
     });
 
-    const mpResult = await mpResponse.json();
+    const pagarmeResult = await pagarmeResponse.json();
 
-    if (!mpResponse.ok) {
-      console.error('[MP Error]', JSON.stringify(mpResult));
-      const rawMsg = mpResult?.message || mpResult?.cause?.[0]?.description || 'Erro no processamento.';
-      const errMsg = String(rawMsg).replace(/null$/i, '').trim();
-      return res.status(400).json({ error: errMsg, details: mpResult });
+    if (!pagarmeResponse.ok) {
+      console.error('[Pagar.me Error]', JSON.stringify(pagarmeResult));
+      const rawMsg = pagarmeResult?.message
+        || pagarmeResult?.errors?.[Object.keys(pagarmeResult?.errors || {})[0]]?.[0]
+        || 'Erro no processamento.';
+      return res.status(400).json({ error: String(rawMsg), details: pagarmeResult });
     }
 
-    // ── Determinar status ──────────────────────────────────
-    const statusMap = {
-      approved:   'approved',
-      rejected:   'rejected',
-      pending:    'pending',
-      in_process: 'pending',
-      cancelled:  'cancelled',
-    };
-    const paymentStatus = statusMap[mpResult.status] || 'pending';
+    const charge = pagarmeResult.charges?.[0];
+    const paymentStatus = mapChargeStatus(charge?.status);
 
     // ── Salvar no Supabase ────────────────────────────────
+    // Reaproveita as colunas mp_* (antes do Mercado Pago) para os IDs da Pagar.me.
     const orderData = {
       id:                  internalOrderId,
       customer_name:       customerName,
@@ -201,16 +160,21 @@ export default async function handler(req, res) {
       product_light_color: lightColor,
       total_price:         totalPrice,
       payment_method:      paymentMethodId,
-      mp_payment_id:       String(mpResult.id),
+      mp_payment_id:       String(charge?.id || pagarmeResult.id),
       status:              paymentStatus,
       shipping_method:     shippingMethod,
       shipping_price:      shippingPrice,
     };
 
+    let qrCode = null;
+    let qrCodeUrl = null;
     if (isPix) {
-      const txData = mpResult.point_of_interaction?.transaction_data;
-      orderData.pix_qr_code        = txData?.qr_code        ?? null;
-      orderData.pix_qr_code_base64 = txData?.qr_code_base64 ?? null;
+      const txData = charge?.last_transaction;
+      qrCode    = txData?.qr_code     ?? null;
+      qrCodeUrl = txData?.qr_code_url ?? null;
+      orderData.pix_qr_code = qrCode;
+      // Guarda a URL do QR (não é base64) na mesma coluna usada antes pela imagem.
+      orderData.pix_qr_code_base64 = qrCodeUrl;
     }
 
     const { data: order, error: dbError } = await supabase
@@ -221,38 +185,18 @@ export default async function handler(req, res) {
 
     if (dbError) console.error('Supabase Error:', dbError);
 
-    // ── Salvar cartão no Mercado Pago (habilita o upsell 1-click) ──
+    // ── Salvar cartão na Pagar.me (habilita o upsell 1-click) ──
     // Só depois da venda aprovada e com um token separado: nada aqui pode
     // afetar a cobrança principal, então qualquer falha é apenas registrada.
     if (!isPix && paymentStatus === 'approved' && productType === 'solar' && saveCardToken && order?.id) {
       try {
-        const mpAuthHeaders = {
-          'Authorization': `Bearer ${MP_ACCESS_TOKEN}`,
-          'Content-Type':  'application/json',
-        };
-        const normalizedEmail = customerEmail.trim().toLowerCase();
+        const customerId = pagarmeResult.customer?.id;
+        if (!customerId) throw new Error('Pedido aprovado sem customer_id retornado');
 
-        const searchRes = await fetch(`${MP_BASE}/v1/customers/search?email=${encodeURIComponent(normalizedEmail)}`, {
-          headers: mpAuthHeaders,
-        });
-        const searchData = await searchRes.json();
-        let customerId = searchData?.results?.[0]?.id;
-
-        if (!customerId) {
-          const createCustomerRes = await fetch(`${MP_BASE}/v1/customers`, {
-            method:  'POST',
-            headers: mpAuthHeaders,
-            body: JSON.stringify({ email: normalizedEmail, first_name: firstName, last_name: lastName }),
-          });
-          const createCustomerData = await createCustomerRes.json();
-          if (!createCustomerRes.ok) throw new Error(createCustomerData?.message || 'Falha ao criar customer');
-          customerId = createCustomerData.id;
-        }
-
-        const cardRes = await fetch(`${MP_BASE}/v1/customers/${customerId}/cards`, {
+        const cardRes = await fetch(`${PAGARME_BASE}/customers/${customerId}/cards`, {
           method:  'POST',
-          headers: mpAuthHeaders,
-          body: JSON.stringify({ token: saveCardToken }),
+          headers: { ...pagarmeAuthHeader(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ card_token: saveCardToken }),
         });
         const cardData = await cardRes.json();
         if (!cardRes.ok) throw new Error(cardData?.message || 'Falha ao salvar cartão');
@@ -287,7 +231,7 @@ export default async function handler(req, res) {
           content_type: 'product',
           num_items:    quantity,
         },
-        eventId: `purchase-${mpResult.id}`,
+        eventId: `purchase-${charge?.id || pagarmeResult.id}`,
       }).catch(e => console.error('Meta CAPI failed (non-fatal):', e));
     }
 
@@ -300,7 +244,6 @@ export default async function handler(req, res) {
 
     // ── Emails pós-compra: apenas cartão aprovado
     if (!isPix && paymentStatus === 'approved') {
-      const firstName = nameParts[0];
       await sendWhatsApp(customerPhone,
         `Olá ${firstName}, seu pedido foi confirmado e logo sairá para entrega, lembrando que nosso prazo de entrega é de 8 dias`
       ).catch(() => {});
@@ -308,21 +251,21 @@ export default async function handler(req, res) {
       await notifyPaymentApproved({
         customerName, customerEmail, customerPhone,
         totalPrice, shippingMethod,
-        orderId: order?.id || mpResult.id,
+        orderId: order?.id || pagarmeResult.id,
       });
       schedulePostPurchaseEmails({
         customerName, customerEmail,
-        orderId: order?.id || mpResult.id,
+        orderId: order?.id || pagarmeResult.id,
       }).catch(e => console.error('Post-purchase emails failed (non-fatal):', e));
     }
 
     return res.status(200).json({
       success:         true,
       status:          paymentStatus,
-      id:              mpResult.id,
+      id:              charge?.id || pagarmeResult.id,
       orderId:         order?.id || null,
-      qr_code:         isPix ? (mpResult.point_of_interaction?.transaction_data?.qr_code        ?? null) : null,
-      qr_code_base64:  isPix ? (mpResult.point_of_interaction?.transaction_data?.qr_code_base64 ?? null) : null,
+      qr_code:         isPix ? qrCode : null,
+      qr_code_url:     isPix ? qrCodeUrl : null,
     });
 
   } catch (err) {
