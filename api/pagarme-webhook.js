@@ -123,7 +123,7 @@ export default async function handler(req, res) {
           eventId: `purchase-${paymentId}`,
         }).catch(e => console.error('Meta CAPI Purchase (webhook) failed:', e));
 
-        upsertBrevoContact({
+        await upsertBrevoContact({
           email: order.customer_email,
           name: order.customer_name,
           phone: order.customer_phone,

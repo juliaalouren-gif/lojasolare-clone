@@ -264,7 +264,7 @@ export default async function handler(req, res) {
     const brevoListId = paymentStatus === 'approved'
       ? BREVO_LISTS.CLIENTES_APROVADOS
       : (isPix ? BREVO_LISTS.PIX_PENDENTE : null); // cartão recusado: só atualiza dados, sem entrar em lista
-    upsertBrevoContact({
+    await upsertBrevoContact({
       email: customerEmail,
       name: customerName,
       phone: customerPhone,
