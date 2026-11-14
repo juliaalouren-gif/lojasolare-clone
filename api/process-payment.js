@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import { notifyPaymentApproved, schedulePostPurchaseEmails, scheduleUpsellOfferEmail } from '../lib/send-notification.js';
+import { notifyPaymentApproved, schedulePostPurchaseEmails, scheduleUpsellOfferEmail, schedulePixReminder, schedulePixReminder2h, schedulePixReminder4h } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
@@ -203,6 +203,18 @@ export default async function handler(req, res) {
 
     if (dbError) console.error('Supabase Error:', dbError);
 
+    // ── Lembretes de Pix (2min/2h/4h) — cliente gerou mas ainda não pagou ──
+    // Os IDs voltam na resposta pro checkout repassar pro obrigado.html, que
+    // os usa pra cancelar os lembretes assim que o pagamento é confirmado.
+    let pixReminderId = null, pixReminder2hId = null, pixReminder4hId = null;
+    if (isPix && paymentStatus === 'pending') {
+      [pixReminderId, pixReminder2hId, pixReminder4hId] = await Promise.all([
+        schedulePixReminder({ customerName, customerEmail, customerPhone, pixCode: qrCode }).catch(e => { console.error('[Email] schedulePixReminder failed:', e); return null; }),
+        schedulePixReminder2h({ customerName, customerEmail, customerPhone }).catch(e => { console.error('[Email] schedulePixReminder2h failed:', e); return null; }),
+        schedulePixReminder4h({ customerName, customerEmail, customerPhone }).catch(e => { console.error('[Email] schedulePixReminder4h failed:', e); return null; }),
+      ]);
+    }
+
     // ── Salvar cartão na Pagar.me (habilita o upsell 1-click) ──
     // Só depois da venda aprovada e com um token separado: nada aqui pode
     // afetar a cobrança principal, então qualquer falha é apenas registrada.
@@ -314,6 +326,9 @@ export default async function handler(req, res) {
       orderId:         order?.id || null,
       qr_code:         isPix ? qrCode : null,
       qr_code_url:     isPix ? qrCodeUrl : null,
+      pix_reminder_id:     pixReminderId,
+      pix_reminder_2h_id:  pixReminder2hId,
+      pix_reminder_4h_id:  pixReminder4hId,
     });
 
   } catch (err) {
