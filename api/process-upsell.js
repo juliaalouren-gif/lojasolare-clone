@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved } from '../lib/send-notification.js';
+import { notifyPaymentApproved, scheduleDownsellOfferEmail } from '../lib/send-notification.js';
 import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus, buildPagarmeCustomer } from '../lib/pagarme.js';
 
 const supabase = createClient(
@@ -163,6 +163,18 @@ export default async function handler(req, res) {
         shippingMethod: order.shipping_method,
         orderId: savedUpsell?.id || `PM-${charge?.id}`,
       });
+
+      // Downsell (2ª oferta) só depois que o 1º upsell foi comprado e aprovado
+      if (offerName === 'upsell') {
+        await scheduleDownsellOfferEmail({
+          customerName: order.customer_name,
+          customerEmail: order.customer_email,
+          offerUrl: order.payment_method === 'pix'
+            ? `${process.env.SITE_URL}/upsell-pix.html?orderId=${orderId}`
+            : `${process.env.SITE_URL}/upsell-v2.html?orderId=${orderId}`,
+          delayMs: 5 * 60 * 1000,
+        }).catch(e => console.error('[Email] scheduleDownsellOfferEmail failed:', e));
+      }
     }
 
     return res.status(200).json({

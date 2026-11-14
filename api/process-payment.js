@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { randomUUID } from 'crypto';
-import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { notifyPaymentApproved, schedulePostPurchaseEmails, scheduleUpsellOfferEmail } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
@@ -294,6 +294,16 @@ export default async function handler(req, res) {
         customerName, customerEmail,
         orderId: order?.id || pagarmeResult.id,
       }).catch(e => console.error('Post-purchase emails failed (non-fatal):', e));
+
+      // Upsell é exclusivo do produto da home (Luminária Solar) — mesma regra do redirect em tempo real
+      if ((productType || 'solar') === 'solar' && order?.id) {
+        await scheduleUpsellOfferEmail({
+          customerName,
+          customerEmail,
+          offerUrl: `${process.env.SITE_URL}/upsell-v2.html?orderId=${order.id}`,
+          delayMs: 2 * 60 * 1000,
+        }).catch(e => console.error('[Email] scheduleUpsellOfferEmail failed:', e));
+      }
     }
 
     return res.status(200).json({

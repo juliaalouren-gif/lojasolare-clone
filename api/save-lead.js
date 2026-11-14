@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
+import { scheduleCheckoutAbandonedEmail } from '../lib/send-notification.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -39,6 +40,14 @@ export default async function handler(req, res) {
         qty:       parseInt(qty) || 1,
         last_seen: now,
       }).eq('phone', cleanPhone);
+    } else if (email) {
+      // Primeira captura deste lead (nunca tinha preenchido o checkout antes)
+      // — agenda e-mail persuasivo de recuperação.
+      await scheduleCheckoutAbandonedEmail({
+        customerName: name,
+        customerEmail: email,
+        delayMs: 12 * 60 * 1000,
+      }).catch(e => console.error('[Email] scheduleCheckoutAbandoned failed:', e));
     }
 
     if (email) {

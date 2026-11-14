@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } from '../lib/send-notification.js';
+import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails, scheduleUpsellOfferEmail, scheduleDownsellOfferEmail } from '../lib/send-notification.js';
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { mapChargeStatus } from '../lib/pagarme.js';
@@ -96,6 +96,27 @@ export default async function handler(req, res) {
           customerEmail: order.customer_email,
           orderId:       order.id,
         }).catch(e => console.error('Post-purchase emails (webhook) failed:', e));
+
+        // Upsell exclusivo do produto da home (Luminária Solar) — só na primeira
+        // transição pra "approved" (evita reagendar em reenvio de webhook)
+        if (!isUpsellOrder && previousStatus !== 'approved' && (order.customer_address?.productType || 'solar') === 'solar') {
+          await scheduleUpsellOfferEmail({
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            offerUrl: `${process.env.SITE_URL}/upsell-pix.html?orderId=${order.id}`,
+            delayMs: 2 * 60 * 1000,
+          }).catch(e => console.error('[Email] scheduleUpsellOfferEmail (webhook) failed:', e));
+        }
+
+        // Downsell (2ª oferta) — só quando o próprio upsell (via Pix) acaba de ser confirmado
+        if (isUpsellOrder && previousStatus !== 'approved' && order.customer_address?.offer === 'upsell') {
+          await scheduleDownsellOfferEmail({
+            customerName: order.customer_name,
+            customerEmail: order.customer_email,
+            offerUrl: `${process.env.SITE_URL}/upsell-pix.html?orderId=${order.customer_address?.upsell_of}`,
+            delayMs: 5 * 60 * 1000,
+          }).catch(e => console.error('[Email] scheduleDownsellOfferEmail (webhook) failed:', e));
+        }
 
         // Meta CAPI Purchase (especially important for Pix — browser pixel may not fire)
         const nameParts = (order.customer_name || '').trim().split(/\s+/);
