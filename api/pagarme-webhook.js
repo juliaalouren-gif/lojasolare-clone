@@ -3,6 +3,7 @@ import { notifyPaymentApproved, notifyPixExpired, schedulePostPurchaseEmails } f
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { mapChargeStatus } from '../lib/pagarme.js';
+import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -121,6 +122,19 @@ export default async function handler(req, res) {
           },
           eventId: `purchase-${paymentId}`,
         }).catch(e => console.error('Meta CAPI Purchase (webhook) failed:', e));
+
+        upsertBrevoContact({
+          email: order.customer_email,
+          name: order.customer_name,
+          phone: order.customer_phone,
+          attributes: {
+            VALOR_PEDIDO: parseFloat(order.total_price) || 0,
+            QUANTIDADE: order.product_quantity || 1,
+            STATUS_PEDIDO: 'approved',
+            METODO_PAGAMENTO: order.payment_method === 'pix' ? 'Pix' : 'Cartão',
+          },
+          listIds: [BREVO_LISTS.CLIENTES_APROVADOS],
+        }).catch(e => console.error('[Brevo] webhook sync failed:', e));
       } else if (newStatus === 'cancelled' && !isUpsellOrder) {
         await notifyPixExpired({
           customerName: order.customer_name,

@@ -5,6 +5,7 @@ import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
 import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus, buildPagarmeCustomer } from '../lib/pagarme.js';
+import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -251,6 +252,25 @@ export default async function handler(req, res) {
         eventId: `purchase-${charge?.id || pagarmeResult.id}`,
       }).catch(e => console.error('Meta CAPI failed (non-fatal):', e));
     }
+
+    // ── Brevo: sincroniza contato pra automação de e-mail marketing ──
+    const brevoAttrs = {
+      VALOR_PEDIDO: parsedTotal,
+      QUANTIDADE: parsedQty,
+      PRODUTO: productName || 'Luminária Solar Solare',
+      STATUS_PEDIDO: paymentStatus,
+      METODO_PAGAMENTO: isPix ? 'Pix' : 'Cartão',
+    };
+    const brevoListId = paymentStatus === 'approved'
+      ? BREVO_LISTS.CLIENTES_APROVADOS
+      : (isPix ? BREVO_LISTS.PIX_PENDENTE : null); // cartão recusado: só atualiza dados, sem entrar em lista
+    upsertBrevoContact({
+      email: customerEmail,
+      name: customerName,
+      phone: customerPhone,
+      attributes: brevoAttrs,
+      listIds: brevoListId ? [brevoListId] : [],
+    }).catch(e => console.error('[Brevo] process-payment sync failed:', e));
 
     // Mark lead converted immediately on card approval so abandonment cron never fires
     if (!isPix && paymentStatus === 'approved' && customerPhone) {

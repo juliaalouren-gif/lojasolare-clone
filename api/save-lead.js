@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -38,6 +39,16 @@ export default async function handler(req, res) {
         qty:       parseInt(qty) || 1,
         last_seen: now,
       }).eq('phone', cleanPhone);
+    }
+
+    if (email) {
+      upsertBrevoContact({
+        email,
+        name,
+        phone: cleanPhone,
+        attributes: { VALOR_PEDIDO: parseFloat(price) || 0, QUANTIDADE: parseInt(qty) || 1 },
+        listIds: [BREVO_LISTS.CARRINHO_ABANDONADO],
+      }).catch(e => console.error('[Brevo] save-lead sync failed:', e));
     }
 
     return res.status(200).json({ ok: true });
