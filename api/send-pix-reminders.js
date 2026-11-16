@@ -6,8 +6,9 @@
  * então quem já pagou nunca recebe lembrete de "pagamento pendente", mesmo
  * que o cliente tenha fechado a aba antes do webhook confirmar.
  *
- * Deve ser chamado periodicamente (ex: a cada 2-5 minutos) por um cron
- * externo (ex: cron-job.org): GET /api/send-pix-reminders?secret=SEU_SYNC_SECRET
+ * Disparado pelo Cron nativo da Vercel a cada 5 minutos (ver vercel.json).
+ * A Vercel autentica a chamada automaticamente enviando
+ * "Authorization: Bearer <CRON_SECRET>" — não precisa de cron externo.
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -19,8 +20,6 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
-const SYNC_SECRET = process.env.SYNC_SECRET || 'solare-sync-2024';
-
 const STAGES = [
   { flag: 'reminder4mSent',  minMs: 4 * 60 * 1000,        send: (o) => sendPixReminder({ customerName: o.customer_name, customerEmail: o.customer_email, pixCode: o.pix_qr_code }) },
   { flag: 'reminder2hSent',  minMs: 2 * 60 * 60 * 1000,   send: (o) => sendPixReminder2h({ customerName: o.customer_name, customerEmail: o.customer_email }) },
@@ -30,7 +29,7 @@ const STAGES = [
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).end();
 
-  if (req.query.secret !== SYNC_SECRET) {
+  if (req.headers.authorization !== `Bearer ${process.env.CRON_SECRET}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
