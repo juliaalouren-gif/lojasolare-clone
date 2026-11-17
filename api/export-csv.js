@@ -56,6 +56,7 @@ const PRODUCT_LABELS = {
   led: 'Luminária LED Sem Fio',
   'lampada-led': 'Lâmpada LED Solar Max',
   jardim: 'Luminária Espeto',
+  promoupse: 'Luminária Solar — Promo Pague 1 Leve 2',
 };
 function fmtProduct(addr) {
   if (!addr) return '';

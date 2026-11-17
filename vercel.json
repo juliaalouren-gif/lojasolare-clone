@@ -68,5 +68,8 @@
       "path": "/api/send-pix-reminders",
       "schedule": "*/5 * * * *"
     }
+  ],
+  "rewrites": [
+    { "source": "/promoupse", "destination": "/promoupse.html" }
   ]
 }
