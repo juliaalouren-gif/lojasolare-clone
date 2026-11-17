@@ -1,9 +1,16 @@
 /**
  * Lista os e-mails enviados via Brevo (todas as automações) numa janela de
  * dias, pra alimentar a aba "Automação" do painel (cards por etapa + tabela
- * detalhada). Só repassa o que a Brevo retorna — nenhuma chave de API é
- * exposta ao navegador.
+ * detalhada). Também cruza os destinatários com os pedidos aprovados pra
+ * saber quem converteu depois do e-mail. Nenhuma chave de API é exposta ao
+ * navegador.
  */
+import { createClient } from '@supabase/supabase-js';
+
+const supabase = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'solare@2024';
 const BREVO_API_KEY = process.env.BREVO_API_KEY;
@@ -53,9 +60,28 @@ export default async function handler(req, res) {
       email: e.email,
       subject: e.subject,
       event: e.event,
+      messageId: e.messageId || null,
     }));
 
-    return res.status(200).json({ events: clean, windowDays });
+    // Cruza os destinatários únicos com pedidos aprovados, pra marcar quem
+    // converteu depois de receber o e-mail (até 7 dias depois do envio).
+    const recipients = [...new Set(clean.map(e => e.email).filter(Boolean))];
+    let conversions = {};
+    if (recipients.length) {
+      const { data: orders, error: ordersErr } = await supabase
+        .from('orders')
+        .select('customer_email, created_at, total_price')
+        .eq('status', 'approved')
+        .in('customer_email', recipients);
+
+      if (!ordersErr && orders) {
+        for (const o of orders) {
+          (conversions[o.customer_email] ||= []).push({ created_at: o.created_at, total_price: o.total_price });
+        }
+      }
+    }
+
+    return res.status(200).json({ events: clean, windowDays, conversions });
   } catch (err) {
     console.error('[brevo-events] error:', err);
     return res.status(500).json({ error: 'Erro ao buscar eventos da Brevo.' });

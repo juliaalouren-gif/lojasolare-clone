@@ -499,7 +499,7 @@
 
       <div class="table-wrap">
         <div class="table-header">
-          <div class="table-title">Histórico detalhado de envios</div>
+          <div class="table-title">Histórico detalhado — quem abriu, clicou e comprou</div>
           <div class="table-count" id="auto-count">—</div>
         </div>
         <div class="table-scroll">
@@ -509,11 +509,14 @@
                 <th>Data / Hora</th>
                 <th>Destinatário</th>
                 <th>Tipo de e-mail</th>
-                <th>Status</th>
+                <th>Entregue</th>
+                <th>Abriu</th>
+                <th>Clicou</th>
+                <th>Converteu</th>
               </tr>
             </thead>
             <tbody id="automation-body">
-              <tr class="loading-row"><td colspan="4"><div class="spinner"></div>Carregando...</td></tr>
+              <tr class="loading-row"><td colspan="7"><div class="spinner"></div>Carregando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -1132,25 +1135,27 @@
   }
 
   let autoEventsCache = [];
+  let autoConversionsCache = {};
 
   async function loadAutomation() {
     const email = document.getElementById('auto-search').value.trim();
     const days  = document.getElementById('auto-days').value;
     const params = new URLSearchParams({ password, email, days });
     document.getElementById('automation-body').innerHTML =
-      '<tr class="loading-row"><td colspan="4"><div class="spinner"></div>Carregando...</td></tr>';
+      '<tr class="loading-row"><td colspan="7"><div class="spinner"></div>Carregando...</td></tr>';
     document.getElementById('auto-stages').innerHTML = '<div class="spinner"></div>';
     try {
       const res  = await fetch(`/api/brevo-events?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro');
       autoEventsCache = data.events || [];
+      autoConversionsCache = data.conversions || {};
       renderAutomationKpis(autoEventsCache, Number(days));
       renderStagesPanel(autoEventsCache);
       renderAutomationTable(autoEventsCache);
     } catch (e) {
       document.getElementById('automation-body').innerHTML =
-        `<tr class="loading-row"><td colspan="4">Erro ao carregar: ${esc(e.message)}</td></tr>`;
+        `<tr class="loading-row"><td colspan="7">Erro ao carregar: ${esc(e.message)}</td></tr>`;
       document.getElementById('auto-stages').innerHTML = '';
     }
   }
@@ -1236,20 +1241,60 @@
       </div>`).join('');
   }
 
+  // Agrupa os eventos soltos da Brevo (requests/delivered/opened/clicks/...)
+  // num único registro por e-mail de verdade enviado, e cruza com pedidos
+  // aprovados pra saber quem comprou depois de receber.
+  function groupEmailSends(events) {
+    const groups = {};
+    events.forEach(e => {
+      const key = e.messageId || `${e.email}|${e.subject}`;
+      if (!groups[key]) groups[key] = { email: e.email, subject: e.subject, sentAt: null, delivered: false, opened: false, clicked: false, bounced: false };
+      const g = groups[key];
+      if (e.event === 'requests')  g.sentAt = e.date;
+      if (e.event === 'delivered') { g.delivered = true; if (!g.sentAt) g.sentAt = e.date; }
+      if (e.event === 'opened')    g.opened = true;
+      if (e.event === 'clicks')    g.clicked = true;
+      if (['hardBounces','softBounces','blocked','error','spam','invalid'].includes(e.event)) g.bounced = true;
+      if (!g.sentAt || new Date(e.date) < new Date(g.sentAt)) g.sentAt = g.sentAt || e.date;
+    });
+    return Object.values(groups).sort((a, b) => new Date(b.sentAt) - new Date(a.sentAt));
+  }
+
+  function checkConversion(email, sentAt) {
+    const orders = autoConversionsCache[email];
+    if (!orders || !sentAt) return null;
+    const sent = new Date(sentAt).getTime();
+    const windowMs = 7 * 24 * 60 * 60 * 1000; // considera conversão em até 7 dias após o envio
+    const hit = orders.find(o => {
+      const t = new Date(o.created_at).getTime();
+      return t >= sent && t <= sent + windowMs;
+    });
+    return hit || null;
+  }
+
   function renderAutomationTable(events) {
-    document.getElementById('auto-count').textContent = `${events.length} evento${events.length !== 1 ? 's' : ''}`;
-    if (!events.length) {
+    const sends = groupEmailSends(events);
+    document.getElementById('auto-count').textContent = `${sends.length} e-mail${sends.length !== 1 ? 's' : ''}`;
+    if (!sends.length) {
       document.getElementById('automation-body').innerHTML =
-        '<tr class="loading-row"><td colspan="4">Nenhum e-mail encontrado.</td></tr>';
+        '<tr class="loading-row"><td colspan="7">Nenhum e-mail encontrado.</td></tr>';
       return;
     }
-    document.getElementById('automation-body').innerHTML = events.slice(0, 300).map(e => `
+    const okBadge = '<span class="badge badge-green">✅</span>';
+    const noBadge = '<span class="badge badge-gray">—</span>';
+    document.getElementById('automation-body').innerHTML = sends.slice(0, 300).map(s => {
+      const conv = checkConversion(s.email, s.sentAt);
+      return `
       <tr>
-        <td class="nowrap">${fmtDate(e.date)}</td>
-        <td style="font-size:13px">${esc(e.email || '—')}</td>
-        <td style="font-size:13px;font-weight:600">${emailTypeLabel(e.subject)}</td>
-        <td>${emailEventBadge(e.event)}</td>
-      </tr>`).join('');
+        <td class="nowrap">${fmtDate(s.sentAt)}</td>
+        <td style="font-size:13px">${esc(s.email || '—')}</td>
+        <td style="font-size:13px;font-weight:600">${emailTypeLabel(s.subject)}</td>
+        <td>${s.bounced ? '<span class="badge badge-red">❌ Falhou</span>' : (s.delivered ? okBadge : noBadge)}</td>
+        <td>${s.opened ? okBadge : noBadge}</td>
+        <td>${s.clicked ? okBadge : noBadge}</td>
+        <td>${conv ? `<span class="badge badge-green">✅ ${fmt(conv.total_price)}</span>` : noBadge}</td>
+      </tr>`;
+    }).join('');
   }
 </script>
 </body>
