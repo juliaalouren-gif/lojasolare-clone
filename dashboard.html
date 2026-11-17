@@ -1003,17 +1003,19 @@
 
   function emailEventBadge(event) {
     const map = {
-      delivered: ['badge-green',  '✅ Entregue'],
-      opened:    ['badge-green',  '👀 Aberto'],
-      clicks:    ['badge-green',  '🖱️ Clicou'],
-      requests:  ['badge-yellow', '⏳ Enviando'],
-      hardBounce:['badge-red',    '❌ Bounce'],
-      softBounce:['badge-red',    '⚠️ Bounce leve'],
-      blocked:   ['badge-red',    '🚫 Bloqueado'],
-      error:     ['badge-red',    '❌ Erro'],
-      spam:      ['badge-red',    '🚫 Spam'],
-      invalid:   ['badge-red',    '🚫 Inválido'],
-      unsubscribed: ['badge-gray','✋ Descadastrou'],
+      delivered:     ['badge-green',  '✅ Entregue'],
+      opened:        ['badge-green',  '👀 Aberto'],
+      clicks:        ['badge-green',  '🖱️ Clicou'],
+      requests:      ['badge-yellow', '⏳ Enviando'],
+      loadedByProxy: ['badge-gray',   '🔍 Pré-carregado'],
+      hardBounces:   ['badge-red',    '❌ Bounce'],
+      softBounces:   ['badge-red',    '⚠️ Bounce leve'],
+      blocked:       ['badge-red',    '🚫 Bloqueado'],
+      error:         ['badge-red',    '❌ Erro'],
+      spam:          ['badge-red',    '🚫 Spam'],
+      invalid:       ['badge-red',    '🚫 Inválido'],
+      deferred:      ['badge-yellow', '🔁 Adiado'],
+      unsubscribed:  ['badge-gray',   '✋ Descadastrou'],
     };
     const [cls, label] = map[event] || ['badge-gray', event || '—'];
     return `<span class="badge ${cls}">${label}</span>`;
@@ -1058,7 +1060,7 @@
     const sends      = events.filter(e => e.event === 'requests');
     const sendsToday = sends.filter(e => isToday(e.date));
     const opens      = events.filter(e => e.event === 'opened' || e.event === 'clicks');
-    const fails      = events.filter(e => ['hardBounce', 'softBounce', 'blocked', 'error', 'spam', 'invalid'].includes(e.event));
+    const fails      = events.filter(e => ['hardBounces', 'softBounces', 'blocked', 'error', 'spam', 'invalid'].includes(e.event));
 
     const periodoLabel = days === 1 ? 'hoje' : days === 7 ? 'nos últimos 7 dias' : 'nos últimos 30 dias';
 
