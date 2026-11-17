@@ -7,6 +7,12 @@ import { createClient } from '@supabase/supabase-js';
 import { packageForQuantity, quoteCheapest, createCartItem, checkoutOrders } from '../lib/superfrete.js';
 import { sendTrackingEmail } from '../lib/send-notification.js';
 
+// 3 chamadas sequenciais pra SuperFrete (cotação + carrinho + checkout) às
+// vezes passam do limite padrão da Vercel antes de responder — o pedido
+// chegava a ser pago e gerado do lado da SuperFrete, mas a função era
+// encerrada antes de salvar o rastreio e mandar o e-mail pro cliente.
+export const config = { maxDuration: 60 };
+
 const supabase = createClient(
   process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_ROLE_KEY
@@ -46,7 +52,9 @@ export default async function handler(req, res) {
     const cep = String(addr.cep || '').replace(/\D/g, '');
     if (cep.length !== 8) return res.status(400).json({ error: 'CEP do cliente inválido ou ausente.' });
 
+    console.log(`[SuperFrete] [${order.id}] cotando frete...`);
     const quote = await quoteCheapest({ toPostalCode: cep, pkg });
+    console.log(`[SuperFrete] [${order.id}] cotado: ${quote.company?.name} R$${quote.price}`);
 
     const phoneDigits = String(order.customer_phone || '').replace(/\D/g, '').slice(-11).padStart(11, '0');
     const to = {
@@ -68,8 +76,10 @@ export default async function handler(req, res) {
       pkg,
       products: [{ name: 'Luminária Solar Solare', quantity: order.product_quantity, unitary_value: Number(order.total_price) || 0 }],
     });
+    console.log(`[SuperFrete] [${order.id}] item no carrinho: ${cartItem.id}, pagando...`);
 
     const checkoutResult = await checkoutOrders([cartItem.id]);
+    console.log(`[SuperFrete] [${order.id}] checkout concluído`);
     const purchased = checkoutResult?.purchase?.orders?.[0];
     if (!purchased?.tracking) {
       return res.status(502).json({ error: 'SuperFrete não retornou o código de rastreio. Confira o saldo da conta.' });
@@ -93,7 +103,10 @@ export default async function handler(req, res) {
       })
       .eq('id', order.id);
 
-    sendTrackingEmail({
+    // Aguarda de verdade — um .catch() sem await corre o risco da Vercel
+    // encerrar a função assim que a resposta é enviada, cortando o envio
+    // do e-mail no meio (mesmo pedido já pago/gerado na SuperFrete).
+    await sendTrackingEmail({
       to: order.customer_email,
       customerName: order.customer_name,
       trackingCode,
