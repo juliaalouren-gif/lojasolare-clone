@@ -4,8 +4,10 @@
  * precisar preencher nada de novo. Chamado pela aba "Etiquetas" do painel.
  */
 import { createClient } from '@supabase/supabase-js';
-import { packageForQuantity, quoteCheapest, createCartItem, checkoutOrders } from '../lib/superfrete.js';
+import { packageForQuantity, quoteCheapest, createCartItem, checkoutOrders, getOrderInfo } from '../lib/superfrete.js';
 import { sendTrackingEmail } from '../lib/send-notification.js';
+
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // 3 chamadas sequenciais pra SuperFrete (cotação + carrinho + checkout) às
 // vezes passam do limite padrão da Vercel antes de responder — o pedido
@@ -39,7 +41,12 @@ export default async function handler(req, res) {
 
     if (fetchErr || !order) return res.status(404).json({ error: 'Pedido não encontrado.' });
     if (order.status !== 'approved') return res.status(400).json({ error: 'Só é possível gerar etiqueta para pedidos pagos.' });
-    if (order.tracking_code) return res.status(400).json({ error: 'Este pedido já tem rastreio gerado.' });
+    // Confere pelo ID da SuperFrete, não só pelo tracking_code — o rastreio
+    // pode demorar a ser atribuído mesmo já com a etiqueta paga/gerada, e
+    // gerar de novo nesse meio tempo cobraria em dobro.
+    if (order.tracking_code || order.customer_address?.superfreteOrderId) {
+      return res.status(400).json({ error: 'Este pedido já tem etiqueta gerada na SuperFrete.' });
+    }
 
     const pkg = packageForQuantity(order.product_quantity);
     if (!pkg) {
@@ -79,19 +86,37 @@ export default async function handler(req, res) {
     console.log(`[SuperFrete] [${order.id}] item no carrinho: ${cartItem.id}, pagando...`);
 
     const checkoutResult = await checkoutOrders([cartItem.id]);
-    console.log(`[SuperFrete] [${order.id}] checkout concluído`);
+    console.log(`[SuperFrete] [${order.id}] checkout concluído — pedido pago`);
     const purchased = checkoutResult?.purchase?.orders?.[0];
-    if (!purchased?.tracking) {
-      return res.status(502).json({ error: 'SuperFrete não retornou o código de rastreio. Confira o saldo da conta.' });
+    if (!purchased) {
+      return res.status(502).json({ error: 'SuperFrete não confirmou o pagamento da etiqueta. Confira o saldo da conta.' });
     }
 
-    const trackingCode = purchased.tracking;
-    const labelUrl = purchased.print?.url || null;
+    let trackingCode = purchased.tracking || null;
+    let labelUrl = purchased.print?.url || null;
 
+    // O rastreio às vezes demora alguns segundos pra ser atribuído mesmo já
+    // com o pagamento confirmado — tenta mais algumas vezes antes de seguir
+    // sem ele (o webhook completa depois, se ainda assim não vier).
+    for (let i = 0; i < 4 && !trackingCode; i++) {
+      await sleep(3000);
+      try {
+        const info = await getOrderInfo(cartItem.id);
+        if (info.tracking) trackingCode = info.tracking;
+        if (info.print?.url) labelUrl = info.print.url;
+      } catch (e) {
+        console.error(`[SuperFrete] [${order.id}] retry getOrderInfo falhou:`, e.message);
+      }
+    }
+    console.log(`[SuperFrete] [${order.id}] rastreio ${trackingCode ? 'obtido: ' + trackingCode : 'ainda não disponível — webhook completa depois'}`);
+
+    // Salva AGORA, com ou sem rastreio — o pagamento já foi feito e a
+    // etiqueta já existe na SuperFrete, então isso precisa ficar registrado
+    // imediatamente pra nunca gerar de novo (evita cobrar duas vezes).
     await supabase
       .from('orders')
       .update({
-        tracking_code: trackingCode,
+        tracking_code: trackingCode, // pode ficar null por enquanto
         customer_address: {
           ...addr,
           superfreteOrderId: cartItem.id,
@@ -103,20 +128,25 @@ export default async function handler(req, res) {
       })
       .eq('id', order.id);
 
-    // Aguarda de verdade — um .catch() sem await corre o risco da Vercel
-    // encerrar a função assim que a resposta é enviada, cortando o envio
-    // do e-mail no meio (mesmo pedido já pago/gerado na SuperFrete).
-    await sendTrackingEmail({
-      to: order.customer_email,
-      customerName: order.customer_name,
-      trackingCode,
-      totalPrice: order.total_price,
-      quantity: order.product_quantity,
-    }).catch(e => console.error('[SuperFrete] sendTrackingEmail failed:', e));
+    if (trackingCode) {
+      // Aguarda de verdade — um .catch() sem await corre o risco da Vercel
+      // encerrar a função assim que a resposta é enviada, cortando o envio
+      // do e-mail no meio.
+      await sendTrackingEmail({
+        to: order.customer_email,
+        customerName: order.customer_name,
+        trackingCode,
+        totalPrice: order.total_price,
+        quantity: order.product_quantity,
+      }).catch(e => console.error('[SuperFrete] sendTrackingEmail failed:', e));
+    }
+    // Sem rastreio ainda: o webhook (api/superfrete-webhook.js) preenche o
+    // tracking_code e manda o e-mail assim que a SuperFrete avisar.
 
     return res.status(200).json({
       success: true,
       trackingCode,
+      pendingTracking: !trackingCode,
       labelUrl,
       carrier: quote.company?.name || null,
       price: purchased.price,

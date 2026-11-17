@@ -7,7 +7,7 @@
  */
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
-import { sendShippingPostedEmail, sendDeliveredEmail } from '../lib/send-notification.js';
+import { sendShippingPostedEmail, sendDeliveredEmail, sendTrackingEmail } from '../lib/send-notification.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -52,10 +52,26 @@ export default async function handler(req, res) {
 
     const newStatus = (data.status || event.replace('order.', '')).toString();
 
-    await supabase
-      .from('orders')
-      .update({ customer_address: { ...order.customer_address, superfreteStatus: newStatus } })
-      .eq('id', order.id);
+    // O rastreio às vezes só vem num evento posterior ao pagamento (não
+    // necessariamente na geração) — se ainda não tínhamos salvo, completa
+    // agora e manda o e-mail de rastreio que não pôde sair na hora.
+    const incomingTracking = data.tracking || null;
+    const justGotTracking = Boolean(incomingTracking) && !order.tracking_code;
+
+    const updates = { customer_address: { ...order.customer_address, superfreteStatus: newStatus } };
+    if (justGotTracking) updates.tracking_code = incomingTracking;
+
+    await supabase.from('orders').update(updates).eq('id', order.id);
+
+    if (justGotTracking) {
+      await sendTrackingEmail({
+        to: order.customer_email,
+        customerName: order.customer_name,
+        trackingCode: incomingTracking,
+        totalPrice: order.total_price,
+        quantity: order.product_quantity,
+      }).catch(e => console.error('[SuperFrete Webhook] sendTrackingEmail (atraso) failed:', e));
+    }
 
     if (event === 'order.posted') {
       await sendShippingPostedEmail({
