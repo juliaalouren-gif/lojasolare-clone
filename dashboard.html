@@ -282,6 +282,13 @@
   </div>
 
   <div class="main">
+    <!-- Tabs -->
+    <div class="tabs-switch" style="display:flex;gap:8px;margin-bottom:20px">
+      <button id="tab-btn-pedidos" onclick="showTab('pedidos')" style="padding:10px 20px;border-radius:10px;border:2px solid var(--primary);background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">📦 Pedidos</button>
+      <button id="tab-btn-etiquetas" onclick="showTab('etiquetas')" style="padding:10px 20px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:14px;cursor:pointer">🏷️ Etiquetas</button>
+    </div>
+
+    <div id="tab-pedidos">
     <!-- KPI Cards -->
     <div class="kpi-grid" id="kpi-grid">
       <div class="kpi"><div class="kpi-icon">📦</div><div class="kpi-label">Total de Pedidos</div><div class="kpi-value" id="s-total">—</div><div class="kpi-sub" id="s-total-sub">período selecionado</div></div>
@@ -365,6 +372,43 @@
       <div class="pagination" id="pagination" style="display:none">
         <div class="pagination-info" id="pagination-info"></div>
         <div class="pagination-btns" id="pagination-btns"></div>
+      </div>
+    </div>
+    </div>
+
+    <!-- ── TAB: Etiquetas (SuperFrete) ── -->
+    <div id="tab-etiquetas" style="display:none">
+      <div class="filters">
+        <div class="filter-group" style="flex:1;min-width:240px">
+          <label>Buscar cliente</label>
+          <input type="text" id="lbl-search" placeholder="Nome ou e-mail do cliente">
+        </div>
+        <button class="filter-btn" onclick="loadLabels()">Filtrar</button>
+        <button class="filter-clear" onclick="document.getElementById('lbl-search').value='';loadLabels()">Limpar</button>
+      </div>
+      <div id="lbl-msg" style="font-size:13px;margin:-8px 0 8px;display:none;font-weight:500"></div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">Pedidos aprovados — gerar etiqueta de envio</div>
+          <div class="table-count" id="lbl-count">—</div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Data</th>
+                <th>Cliente</th>
+                <th>Endereço</th>
+                <th>Qtd</th>
+                <th>Valor</th>
+                <th>Etiqueta / Rastreio</th>
+              </tr>
+            </thead>
+            <tbody id="labels-body">
+              <tr class="loading-row"><td colspan="6"><div class="spinner"></div>Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
@@ -734,6 +778,111 @@
     } catch {
       btn.disabled = false;
       btn.textContent = 'Enviar';
+    }
+  }
+
+  // ── Abas ──────────────────────────────────────────────────────
+  function showTab(name) {
+    const isPedidos = name === 'pedidos';
+    document.getElementById('tab-pedidos').style.display   = isPedidos ? '' : 'none';
+    document.getElementById('tab-etiquetas').style.display = isPedidos ? 'none' : '';
+    document.getElementById('tab-btn-pedidos').style.background   = isPedidos ? 'var(--primary)' : '#fff';
+    document.getElementById('tab-btn-pedidos').style.color        = isPedidos ? '#fff' : 'var(--text)';
+    document.getElementById('tab-btn-etiquetas').style.background = isPedidos ? '#fff' : 'var(--primary)';
+    document.getElementById('tab-btn-etiquetas').style.color      = isPedidos ? 'var(--text)' : '#fff';
+    if (!isPedidos) loadLabels();
+  }
+
+  // ── Etiquetas (SuperFrete) ───────────────────────────────────────
+  function carrierBadge(carrier) {
+    if (!carrier) return '';
+    const label = carrier.toLowerCase().includes('jadlog') ? 'Jadlog' : carrier.toLowerCase().includes('loggi') ? 'Loggi' : carrier;
+    return `<span style="font-size:11px;color:var(--muted);font-weight:600">via ${esc(label)}</span>`;
+  }
+
+  async function loadLabels() {
+    const search = document.getElementById('lbl-search').value.trim();
+    const params = new URLSearchParams({ password, search });
+    document.getElementById('labels-body').innerHTML =
+      '<tr class="loading-row"><td colspan="6"><div class="spinner"></div>Carregando...</td></tr>';
+    try {
+      const res  = await fetch(`/api/superfrete-list-labels?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro');
+      renderLabelsTable(data.orders || []);
+    } catch (e) {
+      document.getElementById('labels-body').innerHTML =
+        `<tr class="loading-row"><td colspan="6">Erro ao carregar: ${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  document.getElementById('lbl-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadLabels();
+  });
+
+  function renderLabelsTable(orders) {
+    document.getElementById('lbl-count').textContent = `${orders.length} pedido${orders.length !== 1 ? 's' : ''}`;
+    if (!orders.length) {
+      document.getElementById('labels-body').innerHTML =
+        '<tr class="loading-row"><td colspan="6">Nenhum pedido encontrado.</td></tr>';
+      return;
+    }
+    document.getElementById('labels-body').innerHTML = orders.map(o => {
+      const addr = o.customer_address || {};
+      const qty  = o.product_quantity;
+      const canAuto = [2, 4, 6, 8].includes(Number(qty));
+      let actionCell;
+      if (o.tracking_code) {
+        const labelUrl = addr.superfreteLabelUrl;
+        actionCell = `
+          <div style="font-size:12px;font-weight:700;color:#1a3c34;background:#f0fdf4;border-radius:8px;padding:6px 10px;border:1px solid #bbf7d0">
+            ${esc(o.tracking_code)}<br>
+            <span style="font-size:11px;color:#16a34a;font-weight:500">✅ Gerada</span> ${carrierBadge(addr.superfreteCarrier)}
+            ${labelUrl ? `<br><a href="${esc(labelUrl)}" target="_blank" style="font-size:12px;color:#1a3c34;font-weight:700;text-decoration:underline">🖨️ Abrir / Imprimir etiqueta</a>` : ''}
+          </div>`;
+      } else if (!canAuto) {
+        actionCell = `<span style="font-size:12px;color:var(--yellow);font-weight:600">⚠️ ${qty} un. — gerar manualmente</span>`;
+      } else {
+        actionCell = `<button onclick="generateLabel('${o.id}', this)" style="background:linear-gradient(135deg,#16a34a,#15803d);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🏷️ Gerar etiqueta</button>`;
+      }
+      return `
+        <tr>
+          <td class="nowrap">${fmtDate(o.created_at)}</td>
+          <td>
+            <div class="customer-name">${esc(o.customer_name || '—')}</div>
+            <div class="customer-email">${esc(o.customer_email || '')}</div>
+          </td>
+          <td style="font-size:12px;line-height:1.6">${fmtAddress(addr)}</td>
+          <td style="text-align:center;font-weight:700">${qty || '—'}</td>
+          <td class="nowrap price">${fmt(o.total_price)}</td>
+          <td style="min-width:200px">${actionCell}</td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function generateLabel(orderId, btn) {
+    btn.disabled = true;
+    btn.textContent = 'Gerando...';
+    const msg = document.getElementById('lbl-msg');
+    msg.style.display = 'none';
+    try {
+      const res  = await fetch('/api/superfrete-generate-label', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, orderId }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro ao gerar etiqueta.');
+      msg.style.display = 'block';
+      msg.style.color = 'var(--green)';
+      msg.textContent = `✅ Etiqueta gerada! Rastreio ${data.trackingCode} — frete R$ ${Number(data.price).toFixed(2).replace('.', ',')} via ${data.carrier || ''}.`;
+      loadLabels();
+    } catch (e) {
+      msg.style.display = 'block';
+      msg.style.color = 'var(--red)';
+      msg.textContent = '❌ ' + e.message;
+      btn.disabled = false;
+      btn.textContent = '🏷️ Gerar etiqueta';
     }
   }
 </script>
