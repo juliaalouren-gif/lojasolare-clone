@@ -379,6 +379,41 @@
 
     <!-- ── TAB: Etiquetas (SuperFrete) ── -->
     <div id="tab-etiquetas" style="display:none">
+      <!-- Saldo da carteira SuperFrete -->
+      <div style="display:flex;gap:12px;align-items:center;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius);padding:14px 20px;margin-bottom:20px;box-shadow:var(--shadow)">
+        <div style="font-size:24px">💰</div>
+        <div>
+          <div style="font-size:12px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:0.4px">Saldo na carteira SuperFrete</div>
+          <div id="sf-balance" style="font-size:22px;font-weight:800;color:var(--text)">—</div>
+        </div>
+        <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="sf-balance-updated"></div>
+        <button class="filter-clear" style="border-color:#16a34a;color:#16a34a;font-weight:600" onclick="loadBalance()">⟳ Atualizar saldo</button>
+      </div>
+
+      <!-- Fila de impressão -->
+      <div class="table-wrap" style="margin-bottom:20px">
+        <div class="table-header">
+          <div class="table-title">🖨️ Etiquetas prontas pra imprimir</div>
+          <div class="table-count" id="print-count">—</div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Cliente</th>
+                <th>Telefone</th>
+                <th>Transportadora</th>
+                <th>Rastreio</th>
+                <th>Ação</th>
+              </tr>
+            </thead>
+            <tbody id="print-queue-body">
+              <tr class="loading-row"><td colspan="5"><div class="spinner"></div>Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <div class="filters">
         <div class="filter-group">
           <label>De</label>
@@ -862,7 +897,7 @@
       document.getElementById('tab-btn-' + t).style.background = active ? 'var(--primary)' : '#fff';
       document.getElementById('tab-btn-' + t).style.color      = active ? '#fff' : 'var(--text)';
     });
-    if (name === 'etiquetas')  loadLabels();
+    if (name === 'etiquetas')  { loadLabels(); loadBalance(); }
     if (name === 'automacao') loadAutomation();
   }
 
@@ -871,6 +906,77 @@
     if (!carrier) return '';
     const label = carrier.toLowerCase().includes('jadlog') ? 'Jadlog' : carrier.toLowerCase().includes('loggi') ? 'Loggi' : carrier;
     return `<span style="font-size:11px;color:var(--muted);font-weight:600">via ${esc(label)}</span>`;
+  }
+
+  async function loadBalance() {
+    const el = document.getElementById('sf-balance');
+    el.textContent = '...';
+    try {
+      const res  = await fetch(`/api/superfrete-balance?password=${encodeURIComponent(password)}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro');
+      const low = data.balance < 20;
+      el.style.color = low ? 'var(--red)' : 'var(--green)';
+      el.textContent = fmt(data.balance) + (low ? ' ⚠️ saldo baixo' : '');
+      document.getElementById('sf-balance-updated').textContent =
+        'atualizado ' + new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+    } catch (e) {
+      el.style.color = 'var(--red)';
+      el.textContent = 'Erro ao consultar';
+    }
+  }
+
+  function renderPrintQueue(orders) {
+    const pending = orders.filter(o => o.tracking_code && !(o.customer_address || {}).superfreteLabelPrinted);
+    document.getElementById('print-count').textContent = `${pending.length} pendente${pending.length !== 1 ? 's' : ''}`;
+    if (!pending.length) {
+      document.getElementById('print-queue-body').innerHTML =
+        '<tr class="loading-row"><td colspan="5">Nenhuma etiqueta pendente de impressão.</td></tr>';
+      return;
+    }
+    document.getElementById('print-queue-body').innerHTML = pending.map(o => {
+      const addr = o.customer_address || {};
+      return `
+        <tr>
+          <td>
+            <div class="customer-name">${esc(o.customer_name || '—')}</div>
+            <div class="customer-email">${esc(o.customer_email || '')}</div>
+          </td>
+          <td class="nowrap">${esc(o.customer_phone || '—')}</td>
+          <td>${carrierBadge(addr.superfreteCarrier)}</td>
+          <td class="nowrap" style="font-weight:700">${esc(o.tracking_code)}</td>
+          <td>
+            <button onclick="printAndMark('${o.id}', '${esc(addr.superfreteLabelUrl || '')}', this)"
+              style="background:linear-gradient(135deg,#1a3c34,#0d2118);color:#fff;border:none;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap">🖨️ Imprimir</button>
+          </td>
+        </tr>`;
+    }).join('');
+  }
+
+  async function printAndMark(orderId, labelUrl, btn) {
+    if (labelUrl) window.open(labelUrl, '_blank');
+    btn.disabled = true;
+    btn.textContent = '...';
+    try {
+      const res = await fetch('/api/superfrete-mark-printed', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password, orderId }),
+      });
+      if (res.ok) {
+        btn.closest('tr').remove();
+        const remaining = document.querySelectorAll('#print-queue-body tr').length;
+        document.getElementById('print-count').textContent = `${remaining} pendente${remaining !== 1 ? 's' : ''}`;
+        if (!remaining) document.getElementById('print-queue-body').innerHTML =
+          '<tr class="loading-row"><td colspan="5">Nenhuma etiqueta pendente de impressão.</td></tr>';
+      } else {
+        btn.disabled = false;
+        btn.textContent = '🖨️ Imprimir';
+      }
+    } catch {
+      btn.disabled = false;
+      btn.textContent = '🖨️ Imprimir';
+    }
   }
 
   function clearLabelFilters() {
@@ -896,6 +1002,7 @@
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro');
       renderLabelsTable(data.orders || []);
+      renderPrintQueue(data.orders || []);
     } catch (e) {
       document.getElementById('labels-body').innerHTML =
         `<tr class="loading-row"><td colspan="8">Erro ao carregar: ${esc(e.message)}</td></tr>`;
