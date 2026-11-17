@@ -828,6 +828,22 @@
     <script src="script.js?v=1.9" defer></script>
     <script>
     window.addEventListener('DOMContentLoaded', function() {
+        // O script.js inicializa o preço com o valor padrão dele (R$ 87,90) e
+        // só atualiza quando a pessoa CLICA num kit. Como o kit de 2un já
+        // aparece selecionado visualmente nesta página, sem isto o cliente
+        // podia ir direto em "Comprar Agora" (ou usar o "+/-" de kits) e
+        // pagar o preço errado por baixo dos panos. Sincroniza tudo com o
+        // kit ativo por padrão aqui (R$ 59,90).
+        window.currentSelectedPrice    = 59.90;
+        window.currentSelectedQty      = 2;
+        window.currentSelectedOldPrice = 129.90;
+        // currentKitBase* são "let" no topo do script.js — por serem scripts
+        // clássicos (não módulos), compartilham o mesmo escopo global, então
+        // dá pra reatribuir direto pelo nome, sem "let"/"const"/"window.".
+        currentKitBaseQty      = 2;
+        currentKitBasePrice    = 59.90;
+        currentKitBaseOldPrice = 129.90;
+
         // Produto diferente do padrão do script.js (preço reduzido da promo
         // "Pague 1 Leve 2") — identidade correta pro pixel/checkout.
         window.handleCheckout = function() {
