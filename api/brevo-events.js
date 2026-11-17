@@ -22,7 +22,8 @@ export default async function handler(req, res) {
 
   const windowDays = Math.max(1, parseInt(days) || 7);
   const startDate = new Date(Date.now() - windowDays * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
-  const endDate = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 10); // +1 dia de folga (fuso)
+  // A Brevo rejeita endDate maior que a data atual — usa hoje (em UTC) como teto.
+  const endDate = new Date().toISOString().slice(0, 10);
 
   try {
     const events = [];
