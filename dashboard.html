@@ -286,6 +286,7 @@
     <div class="tabs-switch" style="display:flex;gap:8px;margin-bottom:20px">
       <button id="tab-btn-pedidos" onclick="showTab('pedidos')" style="padding:10px 20px;border-radius:10px;border:2px solid var(--primary);background:var(--primary);color:#fff;font-weight:700;font-size:14px;cursor:pointer">📦 Pedidos</button>
       <button id="tab-btn-etiquetas" onclick="showTab('etiquetas')" style="padding:10px 20px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:14px;cursor:pointer">🏷️ Etiquetas</button>
+      <button id="tab-btn-automacao" onclick="showTab('automacao')" style="padding:10px 20px;border-radius:10px;border:2px solid var(--border);background:#fff;color:var(--text);font-weight:700;font-size:14px;cursor:pointer">📧 Automação</button>
     </div>
 
     <div id="tab-pedidos">
@@ -379,12 +380,28 @@
     <!-- ── TAB: Etiquetas (SuperFrete) ── -->
     <div id="tab-etiquetas" style="display:none">
       <div class="filters">
+        <div class="filter-group">
+          <label>De</label>
+          <input type="date" id="lbl-from">
+        </div>
+        <div class="filter-group">
+          <label>Até</label>
+          <input type="date" id="lbl-to">
+        </div>
+        <div class="filter-group">
+          <label>Pagamento</label>
+          <select id="lbl-method">
+            <option value="all">Todos</option>
+            <option value="pix">Pix</option>
+            <option value="credit_card">Cartão</option>
+          </select>
+        </div>
         <div class="filter-group" style="flex:1;min-width:240px">
           <label>Buscar cliente</label>
           <input type="text" id="lbl-search" placeholder="Nome ou e-mail do cliente">
         </div>
         <button class="filter-btn" onclick="loadLabels()">Filtrar</button>
-        <button class="filter-clear" onclick="document.getElementById('lbl-search').value='';loadLabels()">Limpar</button>
+        <button class="filter-clear" onclick="clearLabelFilters()">Limpar</button>
       </div>
       <div id="lbl-msg" style="font-size:13px;margin:-8px 0 8px;display:none;font-weight:500"></div>
       <div class="table-wrap">
@@ -401,11 +418,46 @@
                 <th>Endereço</th>
                 <th>Qtd</th>
                 <th>Valor</th>
+                <th>Pagamento</th>
                 <th>Etiqueta / Rastreio</th>
               </tr>
             </thead>
             <tbody id="labels-body">
-              <tr class="loading-row"><td colspan="6"><div class="spinner"></div>Carregando...</td></tr>
+              <tr class="loading-row"><td colspan="7"><div class="spinner"></div>Carregando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── TAB: Automação (e-mails enviados) ── -->
+    <div id="tab-automacao" style="display:none">
+      <div class="filters">
+        <div class="filter-group" style="flex:1;min-width:240px">
+          <label>Filtrar por e-mail do cliente</label>
+          <input type="text" id="auto-search" placeholder="ex: cliente@gmail.com">
+        </div>
+        <button class="filter-btn" onclick="loadAutomation()">Filtrar</button>
+        <button class="filter-clear" onclick="document.getElementById('auto-search').value='';loadAutomation()">Limpar</button>
+        <button class="filter-clear" style="border-color:#16a34a;color:#16a34a;font-weight:600" onclick="loadAutomation()">⟳ Atualizar</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <div class="table-title">E-mails de automação enviados recentemente</div>
+          <div class="table-count" id="auto-count">—</div>
+        </div>
+        <div class="table-scroll">
+          <table>
+            <thead>
+              <tr>
+                <th>Data / Hora</th>
+                <th>Destinatário</th>
+                <th>Tipo de e-mail</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="automation-body">
+              <tr class="loading-row"><td colspan="4"><div class="spinner"></div>Carregando...</td></tr>
             </tbody>
           </table>
         </div>
@@ -783,14 +835,14 @@
 
   // ── Abas ──────────────────────────────────────────────────────
   function showTab(name) {
-    const isPedidos = name === 'pedidos';
-    document.getElementById('tab-pedidos').style.display   = isPedidos ? '' : 'none';
-    document.getElementById('tab-etiquetas').style.display = isPedidos ? 'none' : '';
-    document.getElementById('tab-btn-pedidos').style.background   = isPedidos ? 'var(--primary)' : '#fff';
-    document.getElementById('tab-btn-pedidos').style.color        = isPedidos ? '#fff' : 'var(--text)';
-    document.getElementById('tab-btn-etiquetas').style.background = isPedidos ? '#fff' : 'var(--primary)';
-    document.getElementById('tab-btn-etiquetas').style.color      = isPedidos ? 'var(--text)' : '#fff';
-    if (!isPedidos) loadLabels();
+    ['pedidos', 'etiquetas', 'automacao'].forEach(t => {
+      const active = t === name;
+      document.getElementById('tab-' + t).style.display = active ? '' : 'none';
+      document.getElementById('tab-btn-' + t).style.background = active ? 'var(--primary)' : '#fff';
+      document.getElementById('tab-btn-' + t).style.color      = active ? '#fff' : 'var(--text)';
+    });
+    if (name === 'etiquetas')  loadLabels();
+    if (name === 'automacao') loadAutomation();
   }
 
   // ── Etiquetas (SuperFrete) ───────────────────────────────────────
@@ -800,11 +852,24 @@
     return `<span style="font-size:11px;color:var(--muted);font-weight:600">via ${esc(label)}</span>`;
   }
 
+  function clearLabelFilters() {
+    document.getElementById('lbl-from').value   = '';
+    document.getElementById('lbl-to').value     = '';
+    document.getElementById('lbl-method').value = 'all';
+    document.getElementById('lbl-search').value = '';
+    loadLabels();
+  }
+
   async function loadLabels() {
-    const search = document.getElementById('lbl-search').value.trim();
-    const params = new URLSearchParams({ password, search });
+    const params = new URLSearchParams({
+      password,
+      search: document.getElementById('lbl-search').value.trim(),
+      from:   document.getElementById('lbl-from').value,
+      to:     document.getElementById('lbl-to').value,
+      method: document.getElementById('lbl-method').value,
+    });
     document.getElementById('labels-body').innerHTML =
-      '<tr class="loading-row"><td colspan="6"><div class="spinner"></div>Carregando...</td></tr>';
+      '<tr class="loading-row"><td colspan="7"><div class="spinner"></div>Carregando...</td></tr>';
     try {
       const res  = await fetch(`/api/superfrete-list-labels?${params}`);
       const data = await res.json();
@@ -812,7 +877,7 @@
       renderLabelsTable(data.orders || []);
     } catch (e) {
       document.getElementById('labels-body').innerHTML =
-        `<tr class="loading-row"><td colspan="6">Erro ao carregar: ${esc(e.message)}</td></tr>`;
+        `<tr class="loading-row"><td colspan="7">Erro ao carregar: ${esc(e.message)}</td></tr>`;
     }
   }
 
@@ -824,7 +889,7 @@
     document.getElementById('lbl-count').textContent = `${orders.length} pedido${orders.length !== 1 ? 's' : ''}`;
     if (!orders.length) {
       document.getElementById('labels-body').innerHTML =
-        '<tr class="loading-row"><td colspan="6">Nenhum pedido encontrado.</td></tr>';
+        '<tr class="loading-row"><td colspan="7">Nenhum pedido encontrado.</td></tr>';
       return;
     }
     document.getElementById('labels-body').innerHTML = orders.map(o => {
@@ -855,6 +920,7 @@
           <td style="font-size:12px;line-height:1.6">${fmtAddress(addr)}</td>
           <td style="text-align:center;font-weight:700">${qty || '—'}</td>
           <td class="nowrap price">${fmt(o.total_price)}</td>
+          <td class="nowrap">${methodBadge(o.payment_method)}</td>
           <td style="min-width:200px">${actionCell}</td>
         </tr>`;
     }).join('');
@@ -884,6 +950,75 @@
       btn.disabled = false;
       btn.textContent = '🏷️ Gerar etiqueta';
     }
+  }
+
+  // ── Automação (e-mails enviados via Brevo) ───────────────────────
+  function emailTypeLabel(subject) {
+    const s = subject || '';
+    if (s.includes('Pedido confirmado'))                         return '✅ Confirmação de compra';
+    if (s.includes('oferta exclusiva'))                           return '🔥 Upsell';
+    if (s.includes('última oferta especial') || s.includes('uma última oferta')) return '🎁 Downsell';
+    if (s.includes('esqueceu de pagar seu Pix'))                   return '⏳ Lembrete Pix (inicial)';
+    if (s.includes('ainda está te esperando') && s.toLowerCase().includes('luminária')) return '🔔 Lembrete Pix (2h)';
+    if (s.includes('Última chance') && s.includes('promoção'))    return '🚨 Lembrete Pix (4h)';
+    if (s.includes('luminárias ainda estão te esperando'))        return '🛒 Carrinho abandonado';
+    if (s.includes('sendo preparado'))                            return '📦 Pós-compra: preparando';
+    if (s.includes('já foi enviado') || (s.includes('a caminho') && s.includes('pedido'))) return '🚚 Pós-compra / rastreio: a caminho';
+    if (s.includes('Pix expirou'))                                return '⏱️ Pix expirado';
+    if (s.includes('despachado pela transportadora'))             return '🚚 SuperFrete: postado';
+    if (s.includes('foi entregue'))                                return '📬 SuperFrete: entregue';
+    return '✉️ Outro';
+  }
+
+  function emailEventBadge(event) {
+    const map = {
+      delivered: ['badge-green',  '✅ Entregue'],
+      opened:    ['badge-green',  '👀 Aberto'],
+      requests:  ['badge-yellow', '⏳ Enviando'],
+      hardBounce:['badge-red',    '❌ Bounce'],
+      softBounce:['badge-red',    '⚠️ Bounce leve'],
+      blocked:   ['badge-red',    '🚫 Bloqueado'],
+      error:     ['badge-red',    '❌ Erro'],
+      spam:      ['badge-red',    '🚫 Spam'],
+    };
+    const [cls, label] = map[event] || ['badge-gray', event || '—'];
+    return `<span class="badge ${cls}">${label}</span>`;
+  }
+
+  async function loadAutomation() {
+    const email = document.getElementById('auto-search').value.trim();
+    const params = new URLSearchParams({ password, email });
+    document.getElementById('automation-body').innerHTML =
+      '<tr class="loading-row"><td colspan="4"><div class="spinner"></div>Carregando...</td></tr>';
+    try {
+      const res  = await fetch(`/api/brevo-events?${params}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erro');
+      renderAutomationTable(data.events || []);
+    } catch (e) {
+      document.getElementById('automation-body').innerHTML =
+        `<tr class="loading-row"><td colspan="4">Erro ao carregar: ${esc(e.message)}</td></tr>`;
+    }
+  }
+
+  document.getElementById('auto-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') loadAutomation();
+  });
+
+  function renderAutomationTable(events) {
+    document.getElementById('auto-count').textContent = `${events.length} evento${events.length !== 1 ? 's' : ''}`;
+    if (!events.length) {
+      document.getElementById('automation-body').innerHTML =
+        '<tr class="loading-row"><td colspan="4">Nenhum e-mail encontrado.</td></tr>';
+      return;
+    }
+    document.getElementById('automation-body').innerHTML = events.map(e => `
+      <tr>
+        <td class="nowrap">${fmtDate(e.date)}</td>
+        <td style="font-size:13px">${esc(e.email || '—')}</td>
+        <td style="font-size:13px;font-weight:600">${emailTypeLabel(e.subject)}</td>
+        <td>${emailEventBadge(e.event)}</td>
+      </tr>`).join('');
   }
 </script>
 </body>
