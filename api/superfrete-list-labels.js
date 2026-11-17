@@ -22,7 +22,7 @@ export default async function handler(req, res) {
   try {
     let q = supabase
       .from('orders')
-      .select('id, created_at, customer_name, customer_email, customer_phone, customer_address, product_quantity, total_price, payment_method, tracking_code')
+      .select('id, created_at, customer_name, customer_email, customer_phone, customer_cpf, customer_address, product_quantity, total_price, payment_method, tracking_code')
       .eq('status', 'approved')
       .order('created_at', { ascending: false })
       .limit(300);
