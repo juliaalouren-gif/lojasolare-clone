@@ -433,6 +433,14 @@
     <!-- ── TAB: Automação (e-mails enviados) ── -->
     <div id="tab-automacao" style="display:none">
       <div class="filters">
+        <div class="filter-group">
+          <label>Período</label>
+          <select id="auto-days" onchange="loadAutomation()">
+            <option value="1">Hoje</option>
+            <option value="7" selected>Últimos 7 dias</option>
+            <option value="30">Últimos 30 dias</option>
+          </select>
+        </div>
         <div class="filter-group" style="flex:1;min-width:240px">
           <label>Filtrar por e-mail do cliente</label>
           <input type="text" id="auto-search" placeholder="ex: cliente@gmail.com">
@@ -441,9 +449,21 @@
         <button class="filter-clear" onclick="document.getElementById('auto-search').value='';loadAutomation()">Limpar</button>
         <button class="filter-clear" style="border-color:#16a34a;color:#16a34a;font-weight:600" onclick="loadAutomation()">⟳ Atualizar</button>
       </div>
+
+      <!-- KPIs gerais -->
+      <div class="kpi-grid" id="auto-kpi-grid" style="margin-bottom:24px">
+        <div class="kpi"><div class="kpi-icon">📧</div><div class="kpi-label">Enviados hoje</div><div class="kpi-value green" id="auto-k-hoje">—</div><div class="kpi-sub">todas as automações</div></div>
+        <div class="kpi"><div class="kpi-icon">📬</div><div class="kpi-label" id="auto-k-periodo-label">Enviados no período</div><div class="kpi-value" id="auto-k-periodo">—</div><div class="kpi-sub" id="auto-k-periodo-sub">—</div></div>
+        <div class="kpi"><div class="kpi-icon">👀</div><div class="kpi-label">Taxa de abertura</div><div class="kpi-value" id="auto-k-abertura">—</div><div class="kpi-sub">no período selecionado</div></div>
+        <div class="kpi"><div class="kpi-icon">⚠️</div><div class="kpi-label">Falhas / Bounces</div><div class="kpi-value" id="auto-k-falhas" style="color:var(--red)">—</div><div class="kpi-sub">no período selecionado</div></div>
+      </div>
+
+      <!-- Mapa visual das etapas do funil -->
+      <div id="auto-stages" style="margin-bottom:28px"></div>
+
       <div class="table-wrap">
         <div class="table-header">
-          <div class="table-title">E-mails de automação enviados recentemente</div>
+          <div class="table-title">Histórico detalhado de envios</div>
           <div class="table-count" id="auto-count">—</div>
         </div>
         <div class="table-scroll">
@@ -953,57 +973,156 @@
   }
 
   // ── Automação (e-mails enviados via Brevo) ───────────────────────
-  function emailTypeLabel(subject) {
+  // Catálogo único de etapas — fonte de verdade pros cards visuais E pro
+  // rótulo de tipo na tabela detalhada. Cada automação do sistema mapeada
+  // aqui, agrupada pela fase do funil em que ela acontece.
+  const EMAIL_STAGES = [
+    { id: 'confirmacao', icon: '✅', title: 'Confirmação de compra',     group: 'Compra aprovada',      trigger: 'Imediato, assim que o pagamento é aprovado',             match: s => s.includes('Pedido confirmado') },
+    { id: 'upsell',      icon: '🔥', title: 'Upsell (oferta exclusiva)', group: 'Compra aprovada',      trigger: '2 min após a compra principal aprovada',                 match: s => s.includes('oferta exclusiva') },
+    { id: 'downsell',    icon: '🎁', title: 'Downsell',                 group: 'Compra aprovada',      trigger: '5 min após o upsell ser comprado e aprovado',            match: s => s.includes('última oferta especial') || s.includes('uma última oferta') },
+    { id: 'pix1',        icon: '⏳', title: 'Lembrete Pix — inicial',    group: 'Recuperação de Pix',   trigger: '4 min após gerar o Pix sem pagar',                       match: s => s.includes('esqueceu de pagar seu Pix') },
+    { id: 'pix2h',       icon: '🔔', title: 'Lembrete Pix — 2h',         group: 'Recuperação de Pix',   trigger: '2h após gerar o Pix sem pagar',                          match: s => s.includes('ainda está te esperando') && s.toLowerCase().includes('luminária') },
+    { id: 'pix4h',       icon: '🚨', title: 'Lembrete Pix — 4h',         group: 'Recuperação de Pix',   trigger: '4h após gerar o Pix sem pagar',                          match: s => s.includes('Última chance') && s.includes('promoção') },
+    { id: 'pixexp',      icon: '⏱️', title: 'Pix expirado',              group: 'Recuperação de Pix',   trigger: 'Quando o Pix vence os 30 min sem pagamento',             match: s => s.includes('Pix expirou') },
+    { id: 'abandonado',  icon: '🛒', title: 'Carrinho abandonado',       group: 'Recuperação',          trigger: '12 min após preencher o checkout sem gerar Pix/cartão', match: s => s.includes('luminárias ainda estão te esperando') },
+    { id: 'preparando',  icon: '📦', title: 'Pedido em preparação',      group: 'Pós-venda',            trigger: '3h após a compra aprovada',                              match: s => s.includes('sendo preparado') },
+    { id: 'acaminho',    icon: '🚚', title: 'Pedido a caminho',          group: 'Pós-venda',            trigger: '2 dias após a compra aprovada',                          match: s => s.includes('já foi enviado') || (s.includes('a caminho') && s.includes('pedido')) },
+    { id: 'postado',     icon: '🚚', title: 'SuperFrete: postado',       group: 'Rastreio (SuperFrete)', trigger: 'Quando a transportadora confirma a coleta',             match: s => s.includes('despachado pela transportadora') },
+    { id: 'entregue',    icon: '📬', title: 'SuperFrete: entregue',      group: 'Rastreio (SuperFrete)', trigger: 'Quando a transportadora confirma a entrega',            match: s => s.includes('foi entregue') },
+  ];
+
+  function stageFor(subject) {
     const s = subject || '';
-    if (s.includes('Pedido confirmado'))                         return '✅ Confirmação de compra';
-    if (s.includes('oferta exclusiva'))                           return '🔥 Upsell';
-    if (s.includes('última oferta especial') || s.includes('uma última oferta')) return '🎁 Downsell';
-    if (s.includes('esqueceu de pagar seu Pix'))                   return '⏳ Lembrete Pix (inicial)';
-    if (s.includes('ainda está te esperando') && s.toLowerCase().includes('luminária')) return '🔔 Lembrete Pix (2h)';
-    if (s.includes('Última chance') && s.includes('promoção'))    return '🚨 Lembrete Pix (4h)';
-    if (s.includes('luminárias ainda estão te esperando'))        return '🛒 Carrinho abandonado';
-    if (s.includes('sendo preparado'))                            return '📦 Pós-compra: preparando';
-    if (s.includes('já foi enviado') || (s.includes('a caminho') && s.includes('pedido'))) return '🚚 Pós-compra / rastreio: a caminho';
-    if (s.includes('Pix expirou'))                                return '⏱️ Pix expirado';
-    if (s.includes('despachado pela transportadora'))             return '🚚 SuperFrete: postado';
-    if (s.includes('foi entregue'))                                return '📬 SuperFrete: entregue';
-    return '✉️ Outro';
+    return EMAIL_STAGES.find(st => st.match(s)) || null;
+  }
+
+  function emailTypeLabel(subject) {
+    const st = stageFor(subject);
+    return st ? `${st.icon} ${st.title}` : '✉️ Outro';
   }
 
   function emailEventBadge(event) {
     const map = {
       delivered: ['badge-green',  '✅ Entregue'],
       opened:    ['badge-green',  '👀 Aberto'],
+      clicks:    ['badge-green',  '🖱️ Clicou'],
       requests:  ['badge-yellow', '⏳ Enviando'],
       hardBounce:['badge-red',    '❌ Bounce'],
       softBounce:['badge-red',    '⚠️ Bounce leve'],
       blocked:   ['badge-red',    '🚫 Bloqueado'],
       error:     ['badge-red',    '❌ Erro'],
       spam:      ['badge-red',    '🚫 Spam'],
+      invalid:   ['badge-red',    '🚫 Inválido'],
+      unsubscribed: ['badge-gray','✋ Descadastrou'],
     };
     const [cls, label] = map[event] || ['badge-gray', event || '—'];
     return `<span class="badge ${cls}">${label}</span>`;
   }
 
+  let autoEventsCache = [];
+
   async function loadAutomation() {
     const email = document.getElementById('auto-search').value.trim();
-    const params = new URLSearchParams({ password, email });
+    const days  = document.getElementById('auto-days').value;
+    const params = new URLSearchParams({ password, email, days });
     document.getElementById('automation-body').innerHTML =
       '<tr class="loading-row"><td colspan="4"><div class="spinner"></div>Carregando...</td></tr>';
+    document.getElementById('auto-stages').innerHTML = '<div class="spinner"></div>';
     try {
       const res  = await fetch(`/api/brevo-events?${params}`);
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Erro');
-      renderAutomationTable(data.events || []);
+      autoEventsCache = data.events || [];
+      renderAutomationKpis(autoEventsCache, Number(days));
+      renderStagesPanel(autoEventsCache);
+      renderAutomationTable(autoEventsCache);
     } catch (e) {
       document.getElementById('automation-body').innerHTML =
         `<tr class="loading-row"><td colspan="4">Erro ao carregar: ${esc(e.message)}</td></tr>`;
+      document.getElementById('auto-stages').innerHTML = '';
     }
   }
 
   document.getElementById('auto-search').addEventListener('keydown', e => {
     if (e.key === 'Enter') loadAutomation();
   });
+
+  function isToday(dateStr) {
+    const d = new Date(dateStr);
+    const now = new Date();
+    return d.toDateString() === now.toDateString();
+  }
+
+  // ── KPIs gerais ───────────────────────────────────────────────
+  function renderAutomationKpis(events, days) {
+    const sends      = events.filter(e => e.event === 'requests');
+    const sendsToday = sends.filter(e => isToday(e.date));
+    const opens      = events.filter(e => e.event === 'opened' || e.event === 'clicks');
+    const fails      = events.filter(e => ['hardBounce', 'softBounce', 'blocked', 'error', 'spam', 'invalid'].includes(e.event));
+
+    const periodoLabel = days === 1 ? 'hoje' : days === 7 ? 'nos últimos 7 dias' : 'nos últimos 30 dias';
+
+    document.getElementById('auto-k-hoje').textContent = sendsToday.length;
+    document.getElementById('auto-k-periodo-label').textContent = days === 1 ? 'Enviados hoje' : `Enviados no período`;
+    document.getElementById('auto-k-periodo').textContent = sends.length;
+    document.getElementById('auto-k-periodo-sub').textContent = periodoLabel;
+
+    const openRate = sends.length ? Math.round((opens.length / sends.length) * 100) : 0;
+    document.getElementById('auto-k-abertura').textContent = openRate + '%';
+
+    document.getElementById('auto-k-falhas').textContent = fails.length;
+  }
+
+  // ── Mapa visual das etapas ────────────────────────────────────
+  function renderStagesPanel(events) {
+    const sends = events.filter(e => e.event === 'requests');
+
+    const counts = {};
+    EMAIL_STAGES.forEach(st => { counts[st.id] = { today: 0, period: 0 }; });
+    sends.forEach(e => {
+      const st = stageFor(e.subject);
+      if (!st) return;
+      counts[st.id].period++;
+      if (isToday(e.date)) counts[st.id].today++;
+    });
+
+    const groups = [];
+    EMAIL_STAGES.forEach(st => {
+      let g = groups.find(x => x.name === st.group);
+      if (!g) { g = { name: st.group, stages: [] }; groups.push(g); }
+      g.stages.push(st);
+    });
+
+    document.getElementById('auto-stages').innerHTML = groups.map(g => `
+      <div style="margin-bottom:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:10px">${esc(g.name)}</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px">
+          ${g.stages.map(st => {
+            const c = counts[st.id];
+            const active = c.today > 0;
+            return `
+              <div style="background:var(--surface);border:2px solid ${active ? 'var(--primary-mid)' : 'var(--border)'};border-radius:var(--radius);padding:16px;box-shadow:var(--shadow)">
+                <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+                  <span style="font-size:20px">${st.icon}</span>
+                  <span style="font-size:14px;font-weight:700">${esc(st.title)}</span>
+                </div>
+                <div style="font-size:12px;color:var(--muted);line-height:1.5;margin-bottom:12px;min-height:32px">${esc(st.trigger)}</div>
+                <div style="display:flex;gap:16px;align-items:baseline">
+                  <div>
+                    <div style="font-size:22px;font-weight:800;color:${active ? 'var(--green)' : 'var(--text)'}">${c.today}</div>
+                    <div style="font-size:11px;color:var(--muted)">hoje</div>
+                  </div>
+                  <div>
+                    <div style="font-size:16px;font-weight:700;color:var(--muted)">${c.period}</div>
+                    <div style="font-size:11px;color:var(--muted)">no período</div>
+                  </div>
+                  ${active ? '<span class="badge badge-green" style="margin-left:auto;align-self:center">🟢 Ativo hoje</span>' : ''}
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`).join('');
+  }
 
   function renderAutomationTable(events) {
     document.getElementById('auto-count').textContent = `${events.length} evento${events.length !== 1 ? 's' : ''}`;
@@ -1012,7 +1131,7 @@
         '<tr class="loading-row"><td colspan="4">Nenhum e-mail encontrado.</td></tr>';
       return;
     }
-    document.getElementById('automation-body').innerHTML = events.map(e => `
+    document.getElementById('automation-body').innerHTML = events.slice(0, 300).map(e => `
       <tr>
         <td class="nowrap">${fmtDate(e.date)}</td>
         <td style="font-size:13px">${esc(e.email || '—')}</td>
