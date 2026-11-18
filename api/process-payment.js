@@ -308,7 +308,7 @@ export default async function handler(req, res) {
           customerName,
           customerEmail,
           offerUrl: `${process.env.SITE_URL}/upsell-v2.html?orderId=${order.id}`,
-          delayMs: 2 * 60 * 1000,
+          delayMs: 30 * 1000,
         }).catch(e => console.error('[Email] scheduleUpsellOfferEmail failed:', e));
       }
     }

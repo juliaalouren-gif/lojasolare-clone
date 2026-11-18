@@ -104,7 +104,7 @@ export default async function handler(req, res) {
             customerName: order.customer_name,
             customerEmail: order.customer_email,
             offerUrl: `${process.env.SITE_URL}/upsell-pix.html?orderId=${order.id}`,
-            delayMs: 2 * 60 * 1000,
+            delayMs: 30 * 1000,
           }).catch(e => console.error('[Email] scheduleUpsellOfferEmail (webhook) failed:', e));
         }
 
