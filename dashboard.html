@@ -657,6 +657,16 @@
     const a = typeof addr === 'string' ? JSON.parse(addr) : addr;
     return PRODUCT_LABELS[a.productType] || (a.upsell ? 'Upsell' : '—');
   }
+  // Unidades extras do adicional "luminaria" (marcado no carrinho/checkout),
+  // igual ao BUMP_CONFIG.units do checkout.html — não mexe no product_quantity
+  // salvo (que é a base usada na validação de preço), só soma pra exibição e
+  // pra separação/etiqueta.
+  function bumpUnits(addr) {
+    if (!addr) return 0;
+    const a = typeof addr === 'string' ? JSON.parse(addr) : addr;
+    if (!a.orderBumps || !a.orderBumps.luminaria) return 0;
+    return a.productType === 'led' ? 3 : 2;
+  }
 
   function renderKpis(s, hasFilters) {
     const periodoLabel = s.periodo_label || 'Hoje';
@@ -753,7 +763,12 @@
       return;
     }
 
-    document.getElementById('orders-body').innerHTML = orders.map(o => `
+    document.getElementById('orders-body').innerHTML = orders.map(o => {
+      const extra = bumpUnits(o.customer_address);
+      const qtyCell = !o.product_quantity ? '—'
+        : extra ? `${o.product_quantity + extra} <span style="font-weight:400;font-size:10px;color:#16a34a;display:block">(${o.product_quantity}+${extra} oferta)</span>`
+        : o.product_quantity;
+      return `
       <tr>
         <td class="nowrap">${fmtDate(o.created_at)}</td>
         <td>
@@ -764,7 +779,7 @@
         <td class="nowrap">${esc(o.customer_phone || '—')}</td>
         <td style="font-size:12px;line-height:1.6">${fmtAddress(o.customer_address)}</td>
         <td style="font-size:12px;font-weight:600">${esc(productLabel(o.customer_address))}</td>
-        <td style="text-align:center;font-weight:700">${o.product_quantity || '—'}</td>
+        <td style="text-align:center;font-weight:700">${qtyCell}</td>
         <td style="font-size:12px">${esc(o.product_light_color || '—')}</td>
         <td class="nowrap price">${fmt(o.total_price)}</td>
         <td class="nowrap" style="font-size:12px">${o.shipping_method ? esc(o.shipping_method) + (o.shipping_price ? '<br>' + fmt(o.shipping_price) : '') : '—'}</td>
@@ -786,7 +801,8 @@
           }
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   function esc(str) {
@@ -1025,7 +1041,9 @@
     }
     document.getElementById('labels-body').innerHTML = orders.map(o => {
       const addr = o.customer_address || {};
-      const qty  = o.product_quantity;
+      // Soma a unidade extra do adicional — é a quantidade real que vai na
+      // caixa, igual ao que a geração automática de etiqueta (packageForQuantity) usa.
+      const qty  = (o.product_quantity || 0) + bumpUnits(addr);
       const canAuto = [2, 4, 6, 8].includes(Number(qty));
       let actionCell;
       if (o.tracking_code) {

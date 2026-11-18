@@ -22,6 +22,15 @@ const supabase = createClient(
 
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || 'solare@2024';
 
+// Unidades extras do adicional "luminaria" marcado no checkout — não mexe em
+// order.product_quantity (que é a base já validada no pagamento), só soma pra
+// saber quantas unidades de verdade vão na caixa/etiqueta.
+function bumpUnits(order) {
+  const bumps = order.customer_address?.orderBumps;
+  if (!bumps || !bumps.luminaria) return 0;
+  return order.customer_address?.productType === 'led' ? 3 : 2;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -48,10 +57,11 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Este pedido já tem etiqueta gerada na SuperFrete.' });
     }
 
-    const pkg = packageForQuantity(order.product_quantity);
+    const totalQty = order.product_quantity + bumpUnits(order);
+    const pkg = packageForQuantity(totalQty);
     if (!pkg) {
       return res.status(400).json({
-        error: `Sem medida de caixa cadastrada para ${order.product_quantity} unidades (só 2, 4, 6 ou 8). Gere essa etiqueta manualmente.`,
+        error: `Sem medida de caixa cadastrada para ${totalQty} unidades (só 2, 4, 6 ou 8). Gere essa etiqueta manualmente.`,
       });
     }
 
@@ -81,7 +91,7 @@ export default async function handler(req, res) {
       to,
       service: quote.id,
       pkg,
-      products: [{ name: 'Luminária Solar Solare', quantity: order.product_quantity, unitary_value: Number(order.total_price) || 0 }],
+      products: [{ name: 'Luminária Solar Solare', quantity: totalQty, unitary_value: Number(order.total_price) || 0 }],
     });
     console.log(`[SuperFrete] [${order.id}] item no carrinho: ${cartItem.id}, pagando...`);
 
@@ -137,7 +147,7 @@ export default async function handler(req, res) {
         customerName: order.customer_name,
         trackingCode,
         totalPrice: order.total_price,
-        quantity: order.product_quantity,
+        quantity: totalQty,
       }).catch(e => console.error('[SuperFrete] sendTrackingEmail failed:', e));
     }
     // Sem rastreio ainda: o webhook (api/superfrete-webhook.js) preenche o

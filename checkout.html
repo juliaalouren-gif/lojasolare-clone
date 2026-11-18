@@ -1204,8 +1204,8 @@
 
     // ── ORDER BUMPS ───────────────────────────────────────
     const BUMP_CONFIG = productType === 'led'
-        ? { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 }
-        : { name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 };
+        ? { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90, units: 3 }
+        : { name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90, units: 2 };
     // Atualiza o HTML do bump conforme o produto
     (function() {
         const el = document.getElementById('bump-luminaria');
@@ -1244,9 +1244,12 @@
         const total     = baseTotal + bumpTotal;
         const pixTotal  = baseTotal * 0.95 + bumpTotal;
         const shipTxt   = selectedShippingPrice === 0 ? 'Grátis' : fmt(selectedShippingPrice);
+        // Unidades exibidas = base + bônus do adicional "luminaria" (não mexe
+        // em `qty`, que é a base usada no envio do pedido/pagamento).
+        const displayQty = qty + (selectedBumps.luminaria ? BUMP_CONFIG.units : 0);
 
         // Variant label
-        document.getElementById('sum-variant').textContent = `${qty} unid. — ${light === 'warm' ? 'Luz Quente' : 'Luz Branca'}`;
+        document.getElementById('sum-variant').textContent = `${displayQty} unid. — ${light === 'warm' ? 'Luz Quente' : 'Luz Branca'}`;
 
         // Sidebar summary
         document.getElementById('sum-subtotal').textContent = fmt(sub);

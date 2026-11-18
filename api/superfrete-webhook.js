@@ -14,6 +14,14 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY
 );
 
+// Mesmo helper do api/superfrete-generate-label.js — soma as unidades do
+// adicional "luminaria" só pra exibição no e-mail, sem mexer em product_quantity.
+function bumpUnits(order) {
+  const bumps = order.customer_address?.orderBumps;
+  if (!bumps || !bumps.luminaria) return 0;
+  return order.customer_address?.productType === 'led' ? 3 : 2;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
@@ -69,7 +77,7 @@ export default async function handler(req, res) {
         customerName: order.customer_name,
         trackingCode: incomingTracking,
         totalPrice: order.total_price,
-        quantity: order.product_quantity,
+        quantity: order.product_quantity + bumpUnits(order),
       }).catch(e => console.error('[SuperFrete Webhook] sendTrackingEmail (atraso) failed:', e));
     }
 
