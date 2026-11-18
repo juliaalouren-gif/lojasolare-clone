@@ -1270,6 +1270,12 @@
     }
 
     updateTotalDisplay();
+    // Adicional já marcado no carrinho (cart-drawer.js) chega aqui pelo
+    // parâmetro bumps — reaproveita o bump "luminaria" já existente e já
+    // validado no servidor, sem criar nenhum tipo de bump novo.
+    (urlParams.get('bumps') || '').split(',').forEach(function (key) {
+        if (key in selectedBumps && !selectedBumps[key]) toggleBump(key);
+    });
     if (productType === 'led') {
         document.getElementById('sum-img').src = 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg';
         document.getElementById('sum-title').textContent = 'Luminária LED Sem Fio Solare';

@@ -781,6 +781,7 @@
 
     <script src="https://unpkg.com/aos@2.3.1/dist/aos.js" defer></script>
     <script src="script.js?v=1.9" defer></script>
+    <script src="cart-drawer.js?v=1.0" defer></script>
     <script>
     // Imagens por cor para o produto LED (sobrescreve script.js)
     const LED_IMAGES = {
@@ -830,7 +831,7 @@
                 light: window.currentSelectedLight,
                 product: 'led',
             });
-            window.location.href = 'checkout.html?' + params.toString();
+            window.openCartDrawer(params);
         };
 
         window.selectVariant = function(element, type) {

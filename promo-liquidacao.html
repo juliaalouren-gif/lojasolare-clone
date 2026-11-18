@@ -858,6 +858,7 @@
         </div>
     </footer>
     <script src="script.js?v=1.9" defer></script>
+    <script src="cart-drawer.js?v=1.0" defer></script>
     <script>
     // Seletor de formato: troca a imagem principal + miniatura ativa
     // (retangular usa jardim-principal.jpg, que não tem miniatura própria na galeria)
@@ -915,7 +916,7 @@
                 light: light,
                 product: 'jardim',
             });
-            window.location.href = 'checkout.html?' + params.toString();
+            window.openCartDrawer(params);
         };
     });
     </script>

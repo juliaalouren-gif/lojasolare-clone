@@ -826,5 +826,35 @@
         </div>
     </footer>
     <script src="script.js?v=1.9" defer></script>
+    <script src="cart-drawer.js?v=1.0" defer></script>
+    <script>
+    // Abre o carrinho (cart-drawer.js) em vez de ir direto pro checkout —
+    // sobrescreve handleCheckout DEPOIS do script.js (defer), igual ao padrão
+    // já usado nas outras páginas de produto. Não toca em nada do script.js.
+    window.addEventListener('DOMContentLoaded', function() {
+        window.handleCheckout = function() {
+            const activeLight = document.querySelector('.variant-btn.active[data-value]');
+            if (activeLight) window.currentSelectedLight = activeLight.getAttribute('data-value');
+            if (typeof fbq !== 'undefined') {
+                fbq('track', 'AddToCart', {
+                    content_name: 'Luminária Solar Solare',
+                    content_ids: ['solare-luminaria'],
+                    content_type: 'product',
+                    value: window.currentSelectedPrice,
+                    currency: 'BRL',
+                    num_items: window.currentSelectedQty,
+                });
+            }
+            const params = new URLSearchParams({
+                qty: window.currentSelectedQty,
+                price: window.currentSelectedPrice,
+                oldPrice: window.currentSelectedOldPrice,
+                light: window.currentSelectedLight,
+                product: 'solar',
+            });
+            window.openCartDrawer(params);
+        };
+    });
+    </script>
 </body>
 </html>
