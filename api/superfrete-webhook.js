@@ -19,7 +19,7 @@ const supabase = createClient(
 function bumpUnits(order) {
   const bumps = order.customer_address?.orderBumps;
   if (!bumps || !bumps.luminaria) return 0;
-  return order.customer_address?.productType === 'led' ? 3 : 2;
+  return order.customer_address?.productType === 'led' ? 3 : 4;
 }
 
 export default async function handler(req, res) {

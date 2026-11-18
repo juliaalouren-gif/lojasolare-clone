@@ -665,7 +665,7 @@
     if (!addr) return 0;
     const a = typeof addr === 'string' ? JSON.parse(addr) : addr;
     if (!a.orderBumps || !a.orderBumps.luminaria) return 0;
-    return a.productType === 'led' ? 3 : 2;
+    return a.productType === 'led' ? 3 : 4;
   }
 
   function renderKpis(s, hasFilters) {

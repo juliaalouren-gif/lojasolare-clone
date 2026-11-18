@@ -14,7 +14,7 @@
     var BUMP_BY_PRODUCT = {
         led: { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 },
     };
-    var DEFAULT_BUMP = { name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 };
+    var DEFAULT_BUMP = { name: 'Leve +4 Luminárias Solares', desc: 'Leve mais 4 unidades com desconto exclusivo', price: 79.90 };
 
     var PRODUCT_INFO = {
         solar:      { name: 'Luminária Solar Solare' },
