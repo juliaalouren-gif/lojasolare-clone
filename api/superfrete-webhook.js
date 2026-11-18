@@ -17,9 +17,11 @@ const supabase = createClient(
 // Mesmo helper do api/superfrete-generate-label.js — soma as unidades do
 // adicional "luminaria" só pra exibição no e-mail, sem mexer em product_quantity.
 function bumpUnits(order) {
-  const bumps = order.customer_address?.orderBumps;
-  if (!bumps || !bumps.luminaria) return 0;
-  return order.customer_address?.productType === 'led' ? 3 : 4;
+  const bumps = order.customer_address?.orderBumps || {};
+  let units = 0;
+  if (bumps.luminaria) units += order.customer_address?.productType === 'led' ? 3 : 4;
+  if (bumps.cart2) units += 2; // oferta do carrinho (cart-drawer.js) — soma com o order bump acima
+  return units;
 }
 
 export default async function handler(req, res) {

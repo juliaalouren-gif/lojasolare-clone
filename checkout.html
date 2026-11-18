@@ -1214,8 +1214,14 @@
         el.querySelector('.bump-desc').textContent = BUMP_CONFIG.desc;
         el.querySelector('.bump-price').textContent = '+ R$ ' + BUMP_CONFIG.price.toFixed(2).replace('.', ',');
     })();
-    const BUMP_PRICES = { luminaria: BUMP_CONFIG.price, envio: 9.90 };
-    let selectedBumps  = { luminaria: false, envio: false };
+    // "cart2" é a oferta do carrinho (cart-drawer.js) — +2 unidades por
+    // R$49,90 — independente do order bump acima, que agora é uma oferta
+    // maior e separada (+4/R$79,90 ou, no LED, +3/R$59,90). Os dois podem
+    // ser somados: cliente pode ter marcado o do carrinho E o do checkout.
+    const CART2_PRICE = 49.90;
+    const CART2_UNITS = 2;
+    const BUMP_PRICES = { luminaria: BUMP_CONFIG.price, cart2: CART2_PRICE, envio: 9.90 };
+    let selectedBumps  = { luminaria: false, cart2: false, envio: false };
 
     function getBumpTotal() {
         return Object.entries(selectedBumps)
@@ -1223,9 +1229,18 @@
             .reduce((sum, [k]) => sum + BUMP_PRICES[k], 0);
     }
 
+    function getBumpUnits() {
+        let units = 0;
+        if (selectedBumps.luminaria) units += BUMP_CONFIG.units;
+        if (selectedBumps.cart2) units += CART2_UNITS;
+        return units;
+    }
+
     function toggleBump(key) {
         selectedBumps[key] = !selectedBumps[key];
-        document.getElementById('bump-' + key).classList.toggle('selected', selectedBumps[key]);
+        // "cart2" não tem checkbox próprio no checkout (já foi decidido no
+        // carrinho) — não há elemento #bump-cart2 pra marcar visualmente.
+        document.getElementById('bump-' + key)?.classList.toggle('selected', selectedBumps[key]);
         updateTotalDisplay();
         if (paymentType === 'card') {
             const sel = document.getElementById('card-installments');
@@ -1244,9 +1259,9 @@
         const total     = baseTotal + bumpTotal;
         const pixTotal  = baseTotal * 0.95 + bumpTotal;
         const shipTxt   = selectedShippingPrice === 0 ? 'Grátis' : fmt(selectedShippingPrice);
-        // Unidades exibidas = base + bônus do adicional "luminaria" (não mexe
+        // Unidades exibidas = base + bônus dos adicionais marcados (não mexe
         // em `qty`, que é a base usada no envio do pedido/pagamento).
-        const displayQty = qty + (selectedBumps.luminaria ? BUMP_CONFIG.units : 0);
+        const displayQty = qty + getBumpUnits();
 
         // Variant label
         document.getElementById('sum-variant').textContent = `${displayQty} unid. — ${light === 'warm' ? 'Luz Quente' : 'Luz Branca'}`;

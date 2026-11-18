@@ -11,10 +11,15 @@
 (function () {
     // Mesma config de BUMP_CONFIG do checkout.html — precisa ficar idêntica,
     // pois é só o espelho visual do que o checkout vai cobrar.
+    // "key" é o parâmetro ?bumps= que vai pro checkout.html. No LED, o
+    // carrinho oferece a MESMA coisa que o order bump do checkout (chave
+    // "luminaria"). Nos demais produtos, o carrinho tem uma oferta própria
+    // e menor ("cart2": +2/R$49,90), separada do order bump do checkout
+    // (+4/R$79,90, chave "luminaria") — os dois podem ser somados.
     var BUMP_BY_PRODUCT = {
-        led: { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 },
+        led: { key: 'luminaria', name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 },
     };
-    var DEFAULT_BUMP = { name: 'Leve +4 Luminárias Solares', desc: 'Leve mais 4 unidades com desconto exclusivo', price: 79.90 };
+    var DEFAULT_BUMP = { key: 'cart2', name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 };
 
     var PRODUCT_INFO = {
         solar:      { name: 'Luminária Solar Solare' },
@@ -234,9 +239,9 @@
 
     function goToCheckout() {
         var params = new URLSearchParams(state.params);
-        // "luminaria" é o MESMO bump que já existe no checkout.html e já é
-        // validado em api/process-payment.js — nenhum bump novo é criado aqui.
-        if (state.selected) params.set('bumps', 'luminaria');
+        // Chave do bump já validada no servidor (api/process-payment.js
+        // BUMP_PRICES_SERVER) — "luminaria" no LED, "cart2" nos demais.
+        if (state.selected) params.set('bumps', state.bump.key);
         window.location.href = 'checkout.html?' + params.toString();
     }
 

@@ -37,9 +37,12 @@ export default async function handler(req, res) {
       productType,
     } = req.body;
 
-    // Server-side bump price map — luminaria price varies by product
+    // Server-side bump price map — luminaria price varies by product.
+    // "cart2" é a oferta separada do carrinho (cart-drawer.js, +2/R$49,90),
+    // independente do order bump "luminaria" do checkout — os dois podem
+    // ser somados na mesma compra.
     const luminariaPrice = productType === 'led' ? 59.90 : 79.90;
-    const BUMP_PRICES_SERVER = { luminaria: luminariaPrice, envio: 9.90, garantia: 5.90 };
+    const BUMP_PRICES_SERVER = { luminaria: luminariaPrice, cart2: 49.90, envio: 9.90, garantia: 5.90 };
     const serverBumpTotal = (bumps) => {
       if (!bumps || typeof bumps !== 'object') return 0;
       return Object.entries(BUMP_PRICES_SERVER)
