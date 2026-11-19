@@ -16,6 +16,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // TEMP: cronometragem pra diagnosticar delay relatado no Pix — remover
+  // depois de confirmado onde está o gargalo.
+  const __t0 = Date.now();
+  const __lap = (label) => console.log(`[TIMING] ${label}: ${Date.now() - __t0}ms`);
+
   try {
     const {
       customerName,
@@ -132,13 +137,16 @@ export default async function handler(req, res) {
       'Content-Type': 'application/json',
       'Idempotency-Key': `solare-${internalOrderId}`,
     };
+    __lap('antes do fetch Pagar.me');
     const pagarmeResponse = await fetch(`${PAGARME_BASE}/orders`, {
       method:  'POST',
       headers: pagarmeHeaders,
       body: JSON.stringify(orderBody),
     });
+    __lap('depois do fetch Pagar.me (response recebida)');
 
     const pagarmeResult = await pagarmeResponse.json();
+    __lap('depois do .json() da Pagar.me');
 
     if (!pagarmeResponse.ok) {
       console.error('[Pagar.me Error]', JSON.stringify(pagarmeResult));
@@ -203,6 +211,7 @@ export default async function handler(req, res) {
       .insert(orderData)
       .select()
       .single();
+    __lap('depois do insert no Supabase');
 
     if (dbError) console.error('Supabase Error:', dbError);
 
@@ -317,6 +326,7 @@ export default async function handler(req, res) {
       }
     }
 
+    __lap('TOTAL antes de responder');
     return res.status(200).json({
       success:         true,
       status:          paymentStatus,
