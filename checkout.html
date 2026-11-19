@@ -1002,10 +1002,10 @@
                         <div class="bump-check"><i class="fas fa-check"></i></div>
                         <div class="bump-content">
                             <span class="bump-badge">MAIS VENDIDO</span>
-                            <div class="bump-name">Leve +4 Luminárias Solares</div>
-                            <div class="bump-desc">Leve mais 4 unidades com desconto exclusivo</div>
+                            <div class="bump-name">Leve +1 Luminária Solar</div>
+                            <div class="bump-desc">Leve mais 1 unidade com desconto exclusivo</div>
                         </div>
-                        <div class="bump-price">+ R$ 79,90</div>
+                        <div class="bump-price">+ R$ 29,90</div>
                     </div>
                     <div class="order-bump" id="bump-envio" onclick="toggleBump('envio')">
                         <div class="bump-check"><i class="fas fa-check"></i></div>
@@ -1205,7 +1205,7 @@
     // ── ORDER BUMPS ───────────────────────────────────────
     const BUMP_CONFIG = productType === 'led'
         ? { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90, units: 3 }
-        : { name: 'Leve +4 Luminárias Solares', desc: 'Leve mais 4 unidades com desconto exclusivo', price: 79.90, units: 4 };
+        : { name: 'Leve +1 Luminária Solar', desc: 'Leve mais 1 unidade com desconto exclusivo', price: 29.90, units: 1 };
     // Atualiza o HTML do bump conforme o produto
     (function() {
         const el = document.getElementById('bump-luminaria');
@@ -1215,9 +1215,9 @@
         el.querySelector('.bump-price').textContent = '+ R$ ' + BUMP_CONFIG.price.toFixed(2).replace('.', ',');
     })();
     // "cart2" é a oferta do carrinho (cart-drawer.js) — +2 unidades por
-    // R$49,90 — independente do order bump acima, que agora é uma oferta
-    // maior e separada (+4/R$79,90 ou, no LED, +3/R$59,90). Os dois podem
-    // ser somados: cliente pode ter marcado o do carrinho E o do checkout.
+    // R$49,90 — independente do order bump acima (+1/R$29,90 ou, no LED,
+    // +3/R$59,90). Os dois podem ser somados: cliente pode ter marcado o
+    // do carrinho E o do checkout.
     const CART2_PRICE = 49.90;
     const CART2_UNITS = 2;
     const BUMP_PRICES = { luminaria: BUMP_CONFIG.price, cart2: CART2_PRICE, envio: 9.90 };

@@ -19,7 +19,7 @@ const supabase = createClient(
 function bumpUnits(order) {
   const bumps = order.customer_address?.orderBumps || {};
   let units = 0;
-  if (bumps.luminaria) units += order.customer_address?.productType === 'led' ? 3 : 4;
+  if (bumps.luminaria) units += order.customer_address?.productType === 'led' ? 3 : 1;
   if (bumps.cart2) units += 2; // oferta do carrinho (cart-drawer.js) — soma com o order bump acima
   return units;
 }

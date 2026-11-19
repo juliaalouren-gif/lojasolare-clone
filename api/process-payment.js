@@ -41,7 +41,7 @@ export default async function handler(req, res) {
     // "cart2" é a oferta separada do carrinho (cart-drawer.js, +2/R$49,90),
     // independente do order bump "luminaria" do checkout — os dois podem
     // ser somados na mesma compra.
-    const luminariaPrice = productType === 'led' ? 59.90 : 79.90;
+    const luminariaPrice = productType === 'led' ? 59.90 : 29.90;
     const BUMP_PRICES_SERVER = { luminaria: luminariaPrice, cart2: 49.90, envio: 9.90, garantia: 5.90 };
     const serverBumpTotal = (bumps) => {
       if (!bumps || typeof bumps !== 'object') return 0;
