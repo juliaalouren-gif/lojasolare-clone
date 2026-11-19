@@ -271,7 +271,11 @@ export default async function handler(req, res) {
     const brevoListId = paymentStatus === 'approved'
       ? BREVO_LISTS.CLIENTES_APROVADOS
       : (isPix ? BREVO_LISTS.PIX_PENDENTE : null); // cartão recusado: só atualiza dados, sem entrar em lista
-    await upsertBrevoContact({
+    // Não bloqueia a resposta do pagamento — o pedido já foi criado na
+    // Pagar.me e salvo no Supabase antes daqui, isso é só CRM de e-mail
+    // marketing rodando em paralelo (sincroniza de novo, com status
+    // "approved", quando o pagamento confirma — ver pagarme-webhook.js).
+    upsertBrevoContact({
       email: customerEmail,
       name: customerName,
       phone: customerPhone,
