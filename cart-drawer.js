@@ -54,6 +54,10 @@
     #sc-cart-overlay.open { opacity: 1; visibility: visible; }
     #sc-cart {
         position: fixed; top: 5vh; right: 0; width: 90vw; height: 90vh;
+        /* svh = altura "pequena" de viewport (ignora a barra de endereço do
+           navegador mobile, que entra/sai e some com 90vh baseado no layout
+           viewport, cortando o rodapé até o usuário rolar a página). */
+        top: 5svh; height: 90svh;
         background: #f0f2f5; border-radius: 18px 0 0 18px;
         box-shadow: -12px 0 40px rgba(0,0,0,.25);
         transform: translateX(105%); transition: transform .35s cubic-bezier(.22,.8,.3,1);
@@ -128,7 +132,11 @@
     #sc-cart .sc-secure { text-align: center; font-size: 12px; color: #6b7280; margin-top: 8px; }
 
     @media (max-width: 480px) {
-        #sc-cart .sc-body { padding: 12px; }
+        #sc-cart .sc-head { padding: 10px 16px; }
+        #sc-cart .sc-body { padding: 10px 12px; }
+        #sc-cart .sc-card { padding: 12px; margin-bottom: 10px; }
+        #sc-cart .sc-title { font-size: 14px; margin-bottom: 8px; }
+        #sc-cart .sc-promo { padding: 5px 8px; font-size: 11px; margin-bottom: 6px; }
         #sc-cart .sc-offer {
             display: grid; grid-template-columns: 22px 46px minmax(0, 1fr);
             column-gap: 10px; row-gap: 4px; padding: 10px;
@@ -136,11 +144,12 @@
         #sc-cart .sc-offer .sc-check, #sc-cart .sc-offer .sc-offer-img { grid-row: span 2; }
         #sc-cart .sc-offer-img { width: 46px; height: 46px; }
         #sc-cart .sc-offer-price { grid-column: 3; font-size: 15px; }
-        #sc-cart .sc-rows { gap: 4px; font-size: 13px; }
+        #sc-cart .sc-rows { gap: 3px; font-size: 13px; }
         #sc-cart .sc-row.sc-total { font-size: 17px; }
-        #sc-cart .sc-buy { padding: 13px; margin-top: 8px; }
-        #sc-cart .sc-secure { margin-top: 5px; font-size: 11px; }
-        #sc-cart .sc-item img { width: 60px; height: 60px; }
+        #sc-cart .sc-foot { padding: 8px 16px 10px; }
+        #sc-cart .sc-buy { padding: 12px; margin-top: 6px; }
+        #sc-cart .sc-secure { margin-top: 4px; font-size: 11px; }
+        #sc-cart .sc-item img { width: 56px; height: 56px; }
     }`;
 
     var HTML = `
