@@ -12,7 +12,7 @@
     </script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Catálogo Sugerido - SOLARE PREMIUM</title>
+    <title>Luminárias Solares Premium Potente</title>
     <link rel="stylesheet" href="style.css?v=1.8">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -41,12 +41,15 @@
             gap: 30px;
         }
         .catalog-card {
+            display: block;
             background: #fff;
             border-radius: 20px;
             overflow: hidden;
             box-shadow: 0 10px 30px rgba(0,0,0,0.08);
             position: relative;
             cursor: pointer;
+            text-decoration: none;
+            color: inherit;
             transition: transform 0.3s ease;
         }
         .catalog-card:hover {
@@ -56,7 +59,6 @@
             width: 100%;
             height: 300px;
             object-fit: cover;
-            filter: grayscale(0.5); /* Sold out feel */
         }
         .catalog-info {
             padding: 25px;
@@ -65,69 +67,54 @@
             font-size: 1.3rem;
             margin-bottom: 10px;
         }
-        .sold-out-badge {
+        .catalog-badge {
             position: absolute;
             top: 20px;
-            right: 20px;
+            left: 20px;
             background: #ff4444;
             color: white;
-            padding: 8px 15px;
+            padding: 6px 14px;
             border-radius: 50px;
-            font-weight: 700;
-            font-size: 0.8rem;
-            text-transform: uppercase;
+            font-weight: 800;
+            font-size: 0.85rem;
             z-index: 5;
         }
-        .out-notice {
-            color: #ff4444;
-            font-weight: 700;
+        .catalog-stars {
+            color: #f5a623;
+            font-size: 0.95rem;
+            margin-bottom: 14px;
+        }
+        .catalog-stars strong {
+            color: #333;
+        }
+        .catalog-old-price {
+            color: #888;
             font-size: 0.9rem;
-            margin-top: 10px;
+        }
+        .catalog-now-price {
+            font-size: 1.6rem;
+            font-weight: 800;
+            color: var(--primary-color);
+            margin: 2px 0 4px;
+        }
+        .catalog-installment {
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .catalog-pix {
+            font-size: 0.95rem;
+            color: #166534;
+            margin-bottom: 10px;
+        }
+        .catalog-colors {
+            font-size: 0.85rem;
+            color: #666;
         }
         @media (max-width: 768px) {
             .product-grid {
                 grid-template-columns: 1fr;
             }
-        }
-        /* Scarcity Overlay */
-        .scarcity-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 10000;
-            color: white;
-            text-align: center;
-            padding: 20px;
-        }
-        .overlay-content {
-            background: #fff;
-            color: #333;
-            padding: 40px;
-            border-radius: 20px;
-            max-width: 500px;
-            width: 90%;
-        }
-        .overlay-content i {
-            font-size: 4rem;
-            color: #ff4444;
-            margin-bottom: 20px;
-        }
-        .overlay-content h2 {
-            margin-bottom: 15px;
-            color: #000;
-        }
-        .overlay-content button {
-            background: var(--primary-color);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            border-radius: 8px;
-            margin-top: 25px;
-            font-weight: 700;
-            cursor: pointer;
         }
     </style>
     <!-- Meta Pixel Code -->
@@ -148,43 +135,55 @@
     <main class="catalog-container">
         <a href="index.html" style="text-decoration: none; color: var(--primary-color); font-weight: 700;">← Voltar para a Loja</a>
         <div class="catalog-header">
-            <h1>Produtos Adicionais</h1>
+            <h1>Luminárias Solares Premium Potente</h1>
             <p>Os itens mais desejados da nossa linha premium.</p>
         </div>
 
         <div class="product-grid">
             <!-- Product 1 -->
-            <div class="catalog-card" onclick="showSoldOut()">
-                <div class="sold-out-badge">ESGOTADO</div>
-                <img src="catalogo-1.jpg" class="catalog-img" alt="Luminária Solar Vintage">
+            <a class="catalog-card" href="index.html">
+                <div class="catalog-badge">↓ 32%</div>
+                <img src="luminaria-warm.jpg" class="catalog-img" alt="Luminária solar Led de parede" loading="lazy">
                 <div class="catalog-info">
-                    <h3>Kit Luminária Solar Vintage Stake (4 un)</h3>
-                    <p>Efeito lanterna clássica para jardins e caminhos.</p>
-                    <div class="out-notice">Esgotado há 2 horas</div>
+                    <h3>Luminária solar Led de parede <span class="verified-icon"></span></h3>
+                    <div class="catalog-stars">★★★★★ <strong>4.9</strong> (2.400+)</div>
+                    <div class="catalog-old-price">DE <s>R$ 129,90</s></div>
+                    <div class="catalog-now-price">R$ 87,90</div>
+                    <div class="catalog-installment">em até 12x de R$ 7,33</div>
+                    <div class="catalog-pix"><strong>R$ 83,51</strong> no Pix <span class="pix-badge">5% OFF</span></div>
+                    <div class="catalog-colors">🎨 2 cores de luz</div>
                 </div>
-            </div>
+            </a>
 
             <!-- Product 2 -->
-            <div class="catalog-card" onclick="showSoldOut()">
-                <div class="sold-out-badge">ESGOTADO</div>
-                <img src="catalogo-2.jpg" class="catalog-img" alt="Balizador Garden">
+            <a class="catalog-card" href="index.html">
+                <div class="catalog-badge">↓ 32%</div>
+                <img src="luminaria-escada.jpg" class="catalog-img" alt="Luminária Solare Premium" loading="lazy">
                 <div class="catalog-info">
-                    <h3>Balizador Solar de Chão High-Power (4 un)</h3>
-                    <p>Ideal para balizamento de garagens e áreas de lazer.</p>
-                    <div class="out-notice">Esgotado há 2 horas</div>
+                    <h3>Luminária Solare Premium [Pague 2 e Leve 4] <span class="verified-icon"></span></h3>
+                    <div class="catalog-stars">★★★★★ <strong>4.9</strong> (2.400+)</div>
+                    <div class="catalog-old-price">DE <s>R$ 129,90</s></div>
+                    <div class="catalog-now-price">R$ 87,90</div>
+                    <div class="catalog-installment">em até 12x de R$ 7,33</div>
+                    <div class="catalog-pix"><strong>R$ 83,51</strong> no Pix <span class="pix-badge">5% OFF</span></div>
+                    <div class="catalog-colors">🎨 2 cores de luz</div>
                 </div>
-            </div>
+            </a>
 
             <!-- Product 3 -->
-            <div class="catalog-card" onclick="showSoldOut()">
-                <div class="sold-out-badge">ESGOTADO</div>
-                <img src="catalogo-3.png" class="catalog-img" alt="Refletor Street">
+            <a class="catalog-card" href="index.html">
+                <div class="catalog-badge">↓ 32%</div>
+                <img src="luminaria-white.jpg" class="catalog-img" alt="Luminária Solar de Parede" loading="lazy">
                 <div class="catalog-info">
-                    <h3>Refletor Solar Street Smart com Sensor</h3>
-                    <p>Iluminação inteligente com controle remoto e alta potência.</p>
-                    <div class="out-notice">Esgotado há 2 horas</div>
+                    <h3>Luminária Solar de Parede [Pague 1 e Leve 1 de brinde] <span class="verified-icon"></span></h3>
+                    <div class="catalog-stars">★★★★★ <strong>4.9</strong> (2.400+)</div>
+                    <div class="catalog-old-price">DE <s>R$ 129,90</s></div>
+                    <div class="catalog-now-price">R$ 87,90</div>
+                    <div class="catalog-installment">em até 12x de R$ 7,33</div>
+                    <div class="catalog-pix"><strong>R$ 83,51</strong> no Pix <span class="pix-badge">5% OFF</span></div>
+                    <div class="catalog-colors">🎨 2 cores de luz</div>
                 </div>
-            </div>
+            </a>
         </div>
     </main>
 
@@ -196,24 +195,5 @@
         </div>
     </footer>
 
-    <!-- Scarcity Overlay -->
-    <div id="scarcityOverlay" class="scarcity-overlay">
-        <div class="overlay-content">
-            <i class="fas fa-clock"></i>
-            <h2>PRODUTO ESGOTADO</h2>
-            <p style="font-size: 1.2rem; margin-bottom: 10px;">Este item esgotou há <strong>2 horas</strong> devido à liquidação do dia.</p>
-            <p>Novas unidades estarão disponíveis em breve.</p>
-            <button onclick="hideSoldOut()">ENTENDI</button>
-        </div>
-    </div>
-
-    <script>
-        function showSoldOut() {
-            document.getElementById('scarcityOverlay').style.display = 'flex';
-        }
-        function hideSoldOut() {
-            document.getElementById('scarcityOverlay').style.display = 'none';
-        }
-    </script>
 </body>
 </html>
