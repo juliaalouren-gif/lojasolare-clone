@@ -1197,7 +1197,7 @@
     const price = parseFloat(urlParams.get('price') || '8.00');
     const light = urlParams.get('light') || 'warm';
     const productType = urlParams.get('product') || 'solar';
-    const productNameMap = { solar: 'Luminária Solar Solare', led: 'Luminária LED Sem Fio Solare', 'lampada-led': 'Lâmpada LED Solar Max', jardim: 'Luminária Solar Externa de Jardim', promoupse: 'Luminária Solar Solare' };
+    const productNameMap = { solar: 'Luminária Solar Solare', led: 'Luminária LED Sem Fio Solare', 'lampada-led': 'Lâmpada LED Solar Max', jardim: 'Luminária Solar Externa de Jardim', promoupse: 'Luminária Solar Solare', refletor: 'Refletor Solar com Sensor de Presença' };
     const productName = productNameMap[productType] || 'Luminária Solar Solare';
     let selectedShippingPrice = 0;
     let selectedShippingName = 'Envio Regular (Grátis)';
@@ -1303,6 +1303,9 @@
     } else if (productType === 'jardim') {
         document.getElementById('sum-img').src = light === 'warm' ? 'jardim-principal.jpg' : 'jardim-frente.jpg';
         document.getElementById('sum-title').textContent = 'Luminária Solar Externa de Jardim';
+    } else if (productType === 'refletor') {
+        document.getElementById('sum-img').src = 'refletor-solar.jpg';
+        document.getElementById('sum-title').textContent = 'Refletor Solar com Sensor de Presença';
     } else {
         document.getElementById('sum-img').src = light === 'warm' ? 'luminaria-warm.jpg' : 'luminaria-white.jpg';
     }

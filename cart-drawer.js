@@ -27,6 +27,7 @@
         led:        { name: 'Luminária LED Sem Fio Solare', img: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg' },
         'lampada-led': { name: 'Lâmpada LED Solar Max', img: 'lampada-led-solar-max.png' },
         jardim:     { name: 'Luminária Solar Externa de Jardim' },
+        refletor:   { name: 'Refletor Solar com Sensor de Presença', img: 'refletor-solar.jpg' },
     };
 
     function getBump(productType) {
