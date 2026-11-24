@@ -18,7 +18,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lâmpada LED Solar Max — 3 Modos de Brilho + Carregamento Solar e USB</title>
-    <link rel="preload" href="https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670" as="image">
+    <link rel="preload" href="lampada-led-solar-max.png" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
@@ -125,10 +125,10 @@
                 <div class="buy-grid">
                     <div class="buy-gallery">
                         <div class="main-gallery-img">
-                            <img id="variant-image" src="https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670" alt="Lâmpada LED Solar Max">
+                            <img id="variant-image" src="lampada-led-solar-max.png" alt="Lâmpada LED Solar Max">
                         </div>
                         <div class="thumbnails">
-                            <img src="https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670" class="thumb active" onclick="updateMainImage('https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670', this)" loading="lazy">
+                            <img src="lampada-led-solar-max.png" class="thumb active" onclick="updateMainImage('lampada-led-solar-max.png', this)" loading="lazy">
                             <img src="https://userelux.com.br/cdn/shop/files/yk4eK1ZwxCXOsMhPZy05_1024x.webp?v=1773090670" class="thumb" onclick="updateMainImage('https://userelux.com.br/cdn/shop/files/yk4eK1ZwxCXOsMhPZy05_1024x.webp?v=1773090670', this)" loading="lazy">
                             <img src="https://userelux.com.br/cdn/shop/files/9b7dp6cBbvI3D7Ztpzay_1024x.webp?v=1773090670" class="thumb" onclick="updateMainImage('https://userelux.com.br/cdn/shop/files/9b7dp6cBbvI3D7Ztpzay_1024x.webp?v=1773090670', this)" loading="lazy">
                             <img src="https://userelux.com.br/cdn/shop/files/kpWtUjT17inzLUmmJk4f_1024x.webp?v=1773090670" class="thumb" onclick="updateMainImage('https://userelux.com.br/cdn/shop/files/kpWtUjT17inzLUmmJk4f_1024x.webp?v=1773090670', this)" loading="lazy">
@@ -357,23 +357,49 @@
                 </div>
                 <script>
                 (function() {
-                    var videos = document.querySelectorAll('video.lazy-video');
+                    // Carrega os 4 vídeos em fila (um só começa a baixar
+                    // quando o anterior já tem o primeiro frame pronto) em vez
+                    // de todos de uma vez — evita que ~14MB disputem banda ao
+                    // mesmo tempo e demorem a aparecer na tela.
+                    var videos = Array.prototype.slice.call(document.querySelectorAll('video.lazy-video'));
+
+                    function startLoad(i) {
+                        if (i >= videos.length) return;
+                        var v = videos[i];
+                        v.src = v.dataset.src;
+                        v.play().catch(function(){});
+                        var next = function() { startLoad(i + 1); };
+                        v.addEventListener('loadeddata', next, { once: true });
+                        v.addEventListener('error', next, { once: true });
+                    }
+
                     if (!('IntersectionObserver' in window)) {
-                        videos.forEach(function(v) { v.src = v.dataset.src; v.play().catch(function(){}); });
+                        startLoad(0);
                         return;
                     }
-                    var io = new IntersectionObserver(function(entries) {
+
+                    var playObserver = new IntersectionObserver(function(entries) {
                         entries.forEach(function(entry) {
                             var v = entry.target;
                             if (entry.isIntersecting) {
-                                if (!v.src) { v.src = v.dataset.src; }
-                                v.play().catch(function(){});
+                                if (v.src) v.play().catch(function(){});
                             } else {
                                 v.pause();
                             }
                         });
                     }, { rootMargin: '200px 0px' });
-                    videos.forEach(function(v) { io.observe(v); });
+                    videos.forEach(function(v) { playObserver.observe(v); });
+
+                    var grid = document.querySelector('.video-grid-2x2');
+                    var loadObserver = new IntersectionObserver(function(entries) {
+                        entries.forEach(function(entry) {
+                            if (entry.isIntersecting) {
+                                startLoad(0);
+                                loadObserver.disconnect();
+                            }
+                        });
+                    }, { rootMargin: '200px 0px' });
+                    loadObserver.observe(grid);
                 })();
                 </script>
                 <style>

@@ -25,7 +25,7 @@
         solar:      { name: 'Luminária Solar Solare' },
         promoupse:  { name: 'Luminária Solar Solare' },
         led:        { name: 'Luminária LED Sem Fio Solare', img: 'https://lojaskazamestra.com.br/cdn/shop/files/luminariaLedPilhasPrincipal05_800x.jpg' },
-        'lampada-led': { name: 'Lâmpada LED Solar Max', img: 'https://userelux.com.br/cdn/shop/files/Disenosintitulo_15_1024x.png?v=1773090670' },
+        'lampada-led': { name: 'Lâmpada LED Solar Max', img: 'lampada-led-solar-max.png' },
         jardim:     { name: 'Luminária Solar Externa de Jardim' },
     };
 
