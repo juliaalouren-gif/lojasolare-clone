@@ -18,6 +18,7 @@
     // (+4/R$79,90, chave "luminaria") — os dois podem ser somados.
     var BUMP_BY_PRODUCT = {
         led: { key: 'luminaria', name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90 },
+        refletor: { key: 'cart2', name: 'Leve +2 Refletores Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 },
     };
     var DEFAULT_BUMP = { key: 'cart2', name: 'Leve +2 Luminárias Solares', desc: 'Leve mais 2 unidades com desconto exclusivo', price: 49.90 };
 

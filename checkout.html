@@ -1205,6 +1205,8 @@
     // ── ORDER BUMPS ───────────────────────────────────────
     const BUMP_CONFIG = productType === 'led'
         ? { name: 'Leve +3 Luminárias LED', desc: 'Leve mais 3 unidades com desconto exclusivo', price: 59.90, units: 3 }
+        : productType === 'refletor'
+        ? { name: 'Leve +1 Refletor Solar', desc: 'Leve mais 1 unidade com desconto exclusivo', price: 29.90, units: 1 }
         : { name: 'Leve +1 Luminária Solar', desc: 'Leve mais 1 unidade com desconto exclusivo', price: 29.90, units: 1 };
     // Atualiza o HTML do bump conforme o produto
     (function() {
