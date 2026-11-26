@@ -4,7 +4,7 @@ import { notifyPaymentApproved, schedulePostPurchaseEmails, scheduleUpsellOfferE
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
-import { MP_BASE, mpAuthHeader, mapPaymentStatus, buildMpPayer } from '../lib/mercadopago.js';
+import { MP_BASE, mpAuthHeader, mapPaymentStatus, buildMpPayer, getMpProductInfo, buildMpAdditionalInfo, getClientIp } from '../lib/mercadopago.js';
 import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
 
 const supabase = createClient(
@@ -101,21 +101,33 @@ export default async function handler(req, res) {
     const internalOrderId = randomUUID();
 
     // ── Montar pagamento Mercado Pago ──────────────────────
+    // Item, descrição e foto reais do produto comprado (não um texto
+    // genérico) + dados completos do comprador (telefone, endereço de
+    // entrega, IP) — tudo isso ajuda a análise de risco do Mercado Pago a
+    // aprovar a compra com mais confiança.
+    const productInfo = getMpProductInfo(productType);
     const paymentBody = {
       transaction_amount: parsedTotal,
-      description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
+      description: `${productName || productInfo.title} — Kit ${quantity} unidades`,
       notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
       external_reference: internalOrderId,
       statement_descriptor: 'SOLARE',
       additional_info: {
         items: [{
-          id: 'solare-luminaria',
-          title: `${productName || 'Luminária Solar Solare'} — Kit ${parsedQty} unidades`,
-          description: 'Luminária solar LED recarregável, resistente à água, sem fio. Acende automaticamente à noite.',
+          id: productInfo.id,
+          title: `${productName || productInfo.title} — Kit ${parsedQty} unidades`,
+          description: productInfo.description,
           category_id: 'home',
+          picture_url: `${process.env.SITE_URL}/${productInfo.picture}`,
           quantity: 1,
           unit_price: parsedTotal,
         }],
+        ...buildMpAdditionalInfo({
+          firstName, lastName,
+          phone: customerPhone,
+          address: customerAddress,
+          ipAddress: getClientIp(req),
+        }),
       },
       payer: buildMpPayer({
         email: customerEmail, cpf: cpfDigits,

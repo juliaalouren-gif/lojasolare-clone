@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, scheduleDownsellOfferEmail } from '../lib/send-notification.js';
-import { MP_BASE, mpAuthHeader, mapPaymentStatus, buildMpPayer } from '../lib/mercadopago.js';
+import { MP_BASE, mpAuthHeader, mapPaymentStatus, buildMpPayer, MP_PRODUCT_INFO, buildMpAdditionalInfo, getClientIp } from '../lib/mercadopago.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -64,12 +64,32 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'Upsell not allowed for this order' });
     }
 
+    const firstName = order.customer_name.split(' ')[0];
+    const lastName  = order.customer_name.split(' ').slice(1).join(' ');
     const payer = buildMpPayer({
       email: order.customer_email, cpf: order.customer_cpf,
-      firstName: order.customer_name.split(' ')[0],
-      lastName: order.customer_name.split(' ').slice(1).join(' '),
+      firstName, lastName,
       address: order.customer_address,
     });
+    // Item real (não genérico) + telefone/endereço/IP, mesma lógica do
+    // checkout principal — ajuda a análise de risco do Mercado Pago.
+    const additionalInfo = {
+      items: [{
+        id: MP_PRODUCT_INFO.solar.id,
+        title: `${offerLabel} — Kit 2 Luminárias Solar Solare`,
+        description: MP_PRODUCT_INFO.solar.description,
+        category_id: 'home',
+        picture_url: `${process.env.SITE_URL}/${MP_PRODUCT_INFO.solar.picture}`,
+        quantity: 1,
+        unit_price: upsellAmount,
+      }],
+      ...buildMpAdditionalInfo({
+        firstName, lastName,
+        phone: order.customer_phone,
+        address: order.customer_address,
+        ipAddress: getClientIp(req),
+      }),
+    };
 
     // ── Pix: gera um novo Pix só do valor da oferta ─────────────────
     if (order.payment_method === 'pix') {
@@ -79,6 +99,7 @@ export default async function handler(req, res) {
         payment_method_id: 'pix',
         date_of_expiration: new Date(Date.now() + 15 * 60 * 1000).toISOString(),
         payer,
+        additional_info: additionalInfo,
         notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
         external_reference: `upsell-${orderId}-${Date.now()}`,
       };
@@ -164,6 +185,7 @@ export default async function handler(req, res) {
       installments: 1,
       token: cardTokenData.id,
       payer,
+      additional_info: additionalInfo,
       notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
       external_reference: `upsell-${orderId}-${Date.now()}`,
     };
