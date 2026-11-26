@@ -2,7 +2,7 @@
  * Lembretes de Pix não pago (inicial / 2h / 4h).
  *
  * Diferente de agendar o envio de antemão (Brevo scheduledAt), este cron
- * confere o status ATUAL do pedido direto na Pagar.me antes de cada envio —
+ * confere o status ATUAL do pedido direto no gateway antes de cada envio —
  * então quem já pagou nunca recebe lembrete de "pagamento pendente", mesmo
  * que o cliente tenha fechado a aba antes do webhook confirmar.
  *
@@ -14,6 +14,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendPixReminder, sendPixReminder2h, sendPixReminder4h } from '../lib/send-notification.js';
 import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus } from '../lib/pagarme.js';
+import { MP_BASE, mpAuthHeader, mapPaymentStatus } from '../lib/mercadopago.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -63,13 +64,16 @@ export default async function handler(req, res) {
 
       try {
         // Confere o status real antes de mandar — webhook pode ainda não
-        // ter chegado, mas o cliente já pode ter pago.
-        const chargeRes = await fetch(`${PAGARME_BASE}/charges/${order.mp_payment_id}`, {
-          headers: pagarmeAuthHeader(),
-        });
+        // ter chegado, mas o cliente já pode ter pago. Pedidos novos têm
+        // payment_id numérico (Mercado Pago); pedidos antigos (Pagar.me/Stone)
+        // ainda dentro da janela de 5h no dia da troca caem no fallback.
+        const isMp = /^\d+$/.test(String(order.mp_payment_id));
+        const chargeRes = isMp
+          ? await fetch(`${MP_BASE}/v1/payments/${order.mp_payment_id}`, { headers: mpAuthHeader() })
+          : await fetch(`${PAGARME_BASE}/charges/${order.mp_payment_id}`, { headers: pagarmeAuthHeader() });
         if (chargeRes.ok) {
           const chargeData = await chargeRes.json();
-          const liveStatus = mapChargeStatus(chargeData.status);
+          const liveStatus = isMp ? mapPaymentStatus(chargeData.status) : mapChargeStatus(chargeData.status);
           if (liveStatus !== order.status) {
             await supabase.from('orders').update({ status: liveStatus }).eq('id', order.id);
           }

@@ -18,6 +18,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
     <title>Finalizar Compra — Solare</title>
+    <script src="https://sdk.mercadopago.com/js/v2"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -1606,41 +1607,39 @@
         this.value = this.value.replace(/\D/g, '').slice(0, 4);
     });
 
-    // ── CARD PAYMENT (Pagar.me/Stone) ───────────────────
-    let _pagarmePublicKey = null;
-    async function getPagarmePublicKey() {
-        if (_pagarmePublicKey) return _pagarmePublicKey;
-        const pkRes = await fetch('/api/pagarme-public-key');
+    // ── CARD PAYMENT (Mercado Pago) ───────────────────
+    let _mpInstance = null;
+    async function getMpInstance() {
+        if (_mpInstance) return _mpInstance;
+        const pkRes = await fetch('/api/mp-public-key');
         const { public_key } = await pkRes.json();
-        if (!public_key) throw new Error('Chave pública Stone indisponível');
-        _pagarmePublicKey = public_key;
-        return _pagarmePublicKey;
+        if (!public_key) throw new Error('Chave pública MP indisponível');
+        _mpInstance = new MercadoPago(public_key, { locale: 'pt-BR' });
+        return _mpInstance;
     }
 
-    // Tokeniza o cartão direto na API da Pagar.me (sem passar pelo nosso
-    // servidor) — o dado sensível do cartão nunca toca o backend da Solare.
+    // Tokeniza o cartão via SDK do Mercado Pago — o dado sensível do cartão
+    // nunca toca o nosso servidor.
     async function createCardToken(cardFields) {
-        const publicKey = await getPagarmePublicKey();
-        const res = await fetch(`https://api.pagar.me/core/v5/tokens?appId=${encodeURIComponent(publicKey)}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                type: 'card',
-                card: {
-                    number:      cardFields.cardNumber,
-                    holder_name: cardFields.cardholderName,
-                    exp_month:   parseInt(cardFields.cardExpirationMonth, 10),
-                    exp_year:    parseInt(cardFields.cardExpirationYear, 10),
-                    cvv:         cardFields.securityCode,
-                },
-            }),
-        });
-        const data = await res.json();
-        if (!res.ok) {
-            const cause = data?.message || data?.errors?.[Object.keys(data.errors || {})[0]]?.[0] || 'Dados do cartão inválidos.';
+        const mp = await getMpInstance();
+        const tokenResult = await mp.createCardToken(cardFields);
+        if (!tokenResult?.id) {
+            const cause = tokenResult?.cause?.[0]?.description || 'Dados do cartão inválidos.';
             return { error: cause };
         }
-        return { id: data.id };
+        return { id: tokenResult.id };
+    }
+
+    // Detecta a bandeira do cartão pelo BIN (6 primeiros dígitos) — o
+    // Mercado Pago exige o payment_method_id (visa/master/etc) junto do token.
+    async function detectCardPaymentMethodId(number) {
+        try {
+            const mp = await getMpInstance();
+            const bin = number.slice(0, 6);
+            const pmData = await mp.getPaymentMethods({ bin });
+            if (pmData?.results?.[0]?.id) return pmData.results[0].id;
+        } catch (_) { /* usa visa como fallback */ }
+        return 'visa';
     }
 
     async function payWithCard() {
@@ -1666,13 +1665,17 @@
 
         document.getElementById('loading-overlay').classList.add('active');
         try {
-            // Tokenizar cartão direto na API da Pagar.me/Stone
+            const cardPaymentMethodId = await detectCardPaymentMethodId(number);
+
+            // Tokenizar cartão via SDK do Mercado Pago
             const cardFields = {
                 cardNumber:           number,
                 cardholderName:       holder.toUpperCase(),
                 cardExpirationMonth:  expMonth,
                 cardExpirationYear:   expYear,
                 securityCode:         cvv,
+                identificationType:   'CPF',
+                identificationNumber: cpfDigits,
             };
             const tokenResult = await createCardToken(cardFields);
 
@@ -1710,6 +1713,7 @@
                     paymentMethodId:     'credit_card',
                     cardToken:           tokenResult.id,
                     saveCardToken:       saveCardToken,
+                    cardPaymentMethodId: cardPaymentMethodId,
                     installments:        installments,
                     shippingMethod:      selectedShippingName,
                     shippingPrice:       selectedShippingPrice,
@@ -1798,7 +1802,7 @@
                 const reminderParam    = result.pix_reminder_id    ? `&reminder_id=${encodeURIComponent(result.pix_reminder_id)}`       : '';
                 const reminder2hParam  = result.pix_reminder_2h_id ? `&reminder_2h_id=${encodeURIComponent(result.pix_reminder_2h_id)}` : '';
                 const reminder4hParam  = result.pix_reminder_4h_id ? `&reminder_4h_id=${encodeURIComponent(result.pix_reminder_4h_id)}` : '';
-                window.location.href = `/obrigado.html?status=pending&type=pix&id=${result.id}&total=${pixTotal}&qr_code=${encodeURIComponent(result.qr_code)}&qr_code_url=${encodeURIComponent(result.qr_code_url || '')}${reminderParam}${reminder2hParam}${reminder4hParam}&orderId=${encodeURIComponent(result.orderId || '')}&product=${encodeURIComponent(productType)}`;
+                window.location.href = `/obrigado.html?status=pending&type=pix&id=${result.id}&total=${pixTotal}&qr_code=${encodeURIComponent(result.qr_code)}&qr_code_base64=${encodeURIComponent(result.qr_code_base64 || '')}${reminderParam}${reminder2hParam}${reminder4hParam}&orderId=${encodeURIComponent(result.orderId || '')}&product=${encodeURIComponent(productType)}`;
             } else {
                 const cause = result.error || 'Erro desconhecido';
                 console.error('Pix error:', result);

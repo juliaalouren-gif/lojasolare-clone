@@ -4,7 +4,7 @@ import { notifyPaymentApproved, schedulePostPurchaseEmails, scheduleUpsellOfferE
 import { sendMetaEvent } from '../lib/meta-capi.js';
 import { sendWhatsApp } from '../lib/whatsapp.js';
 import { isValidOrderTotal } from '../lib/order-pricing.js';
-import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus, buildPagarmeCustomer } from '../lib/pagarme.js';
+import { MP_BASE, mpAuthHeader, mapPaymentStatus, buildMpPayer } from '../lib/mercadopago.js';
 import { upsertBrevoContact, BREVO_LISTS } from '../lib/brevo.js';
 
 const supabase = createClient(
@@ -34,6 +34,7 @@ export default async function handler(req, res) {
       paymentMethodId,
       cardToken,
       saveCardToken,
+      cardPaymentMethodId,
       installments,
       shippingMethod,
       shippingPrice,
@@ -98,86 +99,80 @@ export default async function handler(req, res) {
     const firstName  = nameParts[0];
     const lastName   = nameParts.slice(1).join(' ') || firstName;
     const internalOrderId = randomUUID();
-    const amountCents = Math.round(parsedTotal * 100);
 
-    // ── Montar pedido Pagar.me/Stone ───────────────────────
-    const orderBody = {
-      items: [{
-        amount: amountCents,
-        description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
-        quantity: 1,
-        code: 'solare-luminaria',
-      }],
-      customer: buildPagarmeCustomer({
-        name: customerName, email: customerEmail, cpf: cpfDigits,
-        phone: customerPhone, address: customerAddress,
+    // ── Montar pagamento Mercado Pago ──────────────────────
+    const paymentBody = {
+      transaction_amount: parsedTotal,
+      description: `${productName || 'Luminária Solar Solare'} — Kit ${quantity} unidades`,
+      notification_url: `${process.env.SITE_URL}/api/mp-webhook`,
+      external_reference: internalOrderId,
+      statement_descriptor: 'SOLARE',
+      additional_info: {
+        items: [{
+          id: 'solare-luminaria',
+          title: `${productName || 'Luminária Solar Solare'} — Kit ${parsedQty} unidades`,
+          description: 'Luminária solar LED recarregável, resistente à água, sem fio. Acende automaticamente à noite.',
+          category_id: 'home',
+          quantity: 1,
+          unit_price: parsedTotal,
+        }],
+      },
+      payer: buildMpPayer({
+        email: customerEmail, cpf: cpfDigits,
+        firstName, lastName, address: customerAddress,
       }),
-      metadata: { internal_order_id: internalOrderId },
     };
 
     if (isPix) {
-      orderBody.payments = [{
-        payment_method: 'pix',
-        pix: { expires_in: 1800 }, // 30 minutos, igual ao fluxo anterior
-      }];
+      paymentBody.payment_method_id = 'pix';
+      paymentBody.date_of_expiration = new Date(Date.now() + 30 * 60 * 1000).toISOString(); // 30 minutos, igual ao fluxo anterior
     } else {
-      orderBody.payments = [{
-        payment_method: 'credit_card',
-        credit_card: {
-          installments: parseInt(installments) || 1,
-          statement_descriptor: 'SOLARE',
-          card_token: cardToken,
-        },
-      }];
+      paymentBody.token             = cardToken;
+      paymentBody.payment_method_id = cardPaymentMethodId || 'visa';
+      paymentBody.installments      = parseInt(installments) || 1;
+      paymentBody.capture           = true;
     }
 
-    // ── Chamar API Pagar.me ────────────────────────────────
-    const pagarmeHeaders = {
-      ...pagarmeAuthHeader(),
+    // ── Chamar API Mercado Pago ────────────────────────────
+    const mpHeaders = {
+      ...mpAuthHeader(),
       'Content-Type': 'application/json',
-      'Idempotency-Key': `solare-${internalOrderId}`,
+      'X-Idempotency-Key': `solare-${internalOrderId}`,
     };
-    __lap('antes do fetch Pagar.me');
-    const pagarmeResponse = await fetch(`${PAGARME_BASE}/orders`, {
+    __lap('antes do fetch Mercado Pago');
+    const mpResponse = await fetch(`${MP_BASE}/v1/payments`, {
       method:  'POST',
-      headers: pagarmeHeaders,
-      body: JSON.stringify(orderBody),
+      headers: mpHeaders,
+      body: JSON.stringify(paymentBody),
     });
-    __lap('depois do fetch Pagar.me (response recebida)');
+    __lap('depois do fetch Mercado Pago (response recebida)');
 
-    const pagarmeResult = await pagarmeResponse.json();
-    __lap('depois do .json() da Pagar.me');
+    const mpResult = await mpResponse.json();
+    __lap('depois do .json() do Mercado Pago');
 
-    if (!pagarmeResponse.ok) {
-      console.error('[Pagar.me Error]', JSON.stringify(pagarmeResult));
-      const rawMsg = pagarmeResult?.message
-        || pagarmeResult?.errors?.[Object.keys(pagarmeResult?.errors || {})[0]]?.[0]
-        || 'Erro no processamento.';
-      return res.status(400).json({ error: String(rawMsg), details: pagarmeResult });
+    if (!mpResponse.ok) {
+      console.error('[Mercado Pago Error]', JSON.stringify(mpResult));
+      const rawMsg = mpResult?.message || mpResult?.cause?.[0]?.description || 'Erro no processamento.';
+      return res.status(400).json({ error: String(rawMsg).replace(/null$/i, '').trim(), details: mpResult });
     }
 
-    const charge = pagarmeResult.charges?.[0];
-    const paymentStatus = mapChargeStatus(charge?.status);
+    const paymentStatus = mapPaymentStatus(mpResult.status);
 
     // Mesmo com HTTP 200, a cobrança em si pode ter sido recusada (cartão
-    // negado, chave Pix ausente/errada na conta Stone, etc.). O motivo técnico
+    // negado, chave Pix ausente/errada na conta, etc.). O motivo técnico
     // sempre vai pro log do servidor; pro cliente só expomos o motivo cru em
     // cartão (ele já espera ver "cartão recusado" e pode tentar outro) — no
     // Pix, que o cliente não controla, mostramos uma mensagem genérica.
     let rejectionReason = null;
     if (paymentStatus === 'rejected') {
-      const lt = charge?.last_transaction;
-      const technicalReason = lt?.gateway_response?.errors?.[0]?.message
-        || lt?.acquirer_message
-        || 'Pagamento recusado.';
-      console.warn('[Pagar.me] Cobrança recusada', { chargeId: charge?.id, status: charge?.status, technicalReason });
+      const technicalReason = mpResult.status_detail || 'Pagamento recusado.';
+      console.warn('[Mercado Pago] Cobrança recusada', { paymentId: mpResult.id, status: mpResult.status, technicalReason });
       rejectionReason = isPix
         ? 'Não foi possível gerar o Pix no momento. Tente novamente em instantes ou use o cartão.'
         : technicalReason;
     }
 
     // ── Salvar no Supabase ────────────────────────────────
-    // Reaproveita as colunas mp_* (antes do Mercado Pago) para os IDs da Pagar.me.
     const orderData = {
       id:                  internalOrderId,
       customer_name:       customerName,
@@ -189,21 +184,20 @@ export default async function handler(req, res) {
       product_light_color: lightColor,
       total_price:         totalPrice,
       payment_method:      paymentMethodId,
-      mp_payment_id:       String(charge?.id || pagarmeResult.id),
+      mp_payment_id:       String(mpResult.id),
       status:              paymentStatus,
       shipping_method:     shippingMethod,
       shipping_price:      shippingPrice,
     };
 
     let qrCode = null;
-    let qrCodeUrl = null;
+    let qrCodeBase64 = null;
     if (isPix) {
-      const txData = charge?.last_transaction;
-      qrCode    = txData?.qr_code     ?? null;
-      qrCodeUrl = txData?.qr_code_url ?? null;
+      const txData = mpResult.point_of_interaction?.transaction_data;
+      qrCode       = txData?.qr_code        ?? null;
+      qrCodeBase64 = txData?.qr_code_base64 ?? null;
       orderData.pix_qr_code = qrCode;
-      // Guarda a URL do QR (não é base64) na mesma coluna usada antes pela imagem.
-      orderData.pix_qr_code_base64 = qrCodeUrl;
+      orderData.pix_qr_code_base64 = qrCodeBase64;
     }
 
     const { data: order, error: dbError } = await supabase
@@ -216,21 +210,36 @@ export default async function handler(req, res) {
     if (dbError) console.error('Supabase Error:', dbError);
 
     // Lembretes de Pix não pago agora são tratados pelo cron
-    // api/send-pix-reminders.js, que confere o status direto na Pagar.me
+    // api/send-pix-reminders.js, que confere o status direto no Mercado Pago
     // antes de enviar — evita mandar lembrete pra quem já pagou.
 
-    // ── Salvar cartão na Pagar.me (habilita o upsell 1-click) ──
+    // ── Salvar cartão no Mercado Pago (habilita o upsell 1-click) ──
     // Só depois da venda aprovada e com um token separado: nada aqui pode
     // afetar a cobrança principal, então qualquer falha é apenas registrada.
     if (!isPix && paymentStatus === 'approved' && productType === 'solar' && saveCardToken && order?.id) {
       try {
-        const customerId = pagarmeResult.customer?.id;
-        if (!customerId) throw new Error('Pedido aprovado sem customer_id retornado');
+        const normalizedEmail = customerEmail.trim().toLowerCase();
+        const searchRes = await fetch(`${MP_BASE}/v1/customers/search?email=${encodeURIComponent(normalizedEmail)}`, {
+          headers: mpAuthHeader(),
+        });
+        const searchData = await searchRes.json();
+        let customerId = searchData?.results?.[0]?.id;
 
-        const cardRes = await fetch(`${PAGARME_BASE}/customers/${customerId}/cards`, {
+        if (!customerId) {
+          const createCustomerRes = await fetch(`${MP_BASE}/v1/customers`, {
+            method:  'POST',
+            headers: { ...mpAuthHeader(), 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: normalizedEmail, first_name: firstName, last_name: lastName }),
+          });
+          const createCustomerData = await createCustomerRes.json();
+          if (!createCustomerRes.ok) throw new Error(createCustomerData?.message || 'Falha ao criar customer');
+          customerId = createCustomerData.id;
+        }
+
+        const cardRes = await fetch(`${MP_BASE}/v1/customers/${customerId}/cards`, {
           method:  'POST',
-          headers: { ...pagarmeAuthHeader(), 'Content-Type': 'application/json' },
-          body: JSON.stringify({ card_token: saveCardToken }),
+          headers: { ...mpAuthHeader(), 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token: saveCardToken }),
         });
         const cardData = await cardRes.json();
         if (!cardRes.ok) throw new Error(cardData?.message || 'Falha ao salvar cartão');
@@ -265,7 +274,7 @@ export default async function handler(req, res) {
           content_type: 'product',
           num_items:    quantity,
         },
-        eventId: `purchase-${charge?.id || pagarmeResult.id}`,
+        eventId: `purchase-${mpResult.id}`,
       }).catch(e => console.error('Meta CAPI failed (non-fatal):', e));
     }
 
@@ -280,10 +289,10 @@ export default async function handler(req, res) {
     const brevoListId = paymentStatus === 'approved'
       ? BREVO_LISTS.CLIENTES_APROVADOS
       : (isPix ? BREVO_LISTS.PIX_PENDENTE : null); // cartão recusado: só atualiza dados, sem entrar em lista
-    // Não bloqueia a resposta do pagamento — o pedido já foi criado na
-    // Pagar.me e salvo no Supabase antes daqui, isso é só CRM de e-mail
+    // Não bloqueia a resposta do pagamento — o pedido já foi criado no
+    // Mercado Pago e salvo no Supabase antes daqui, isso é só CRM de e-mail
     // marketing rodando em paralelo (sincroniza de novo, com status
-    // "approved", quando o pagamento confirma — ver pagarme-webhook.js).
+    // "approved", quando o pagamento confirma — ver mp-webhook.js).
     upsertBrevoContact({
       email: customerEmail,
       name: customerName,
@@ -308,11 +317,11 @@ export default async function handler(req, res) {
       await notifyPaymentApproved({
         customerName, customerEmail, customerPhone,
         totalPrice, shippingMethod,
-        orderId: order?.id || pagarmeResult.id,
+        orderId: order?.id || mpResult.id,
       });
       schedulePostPurchaseEmails({
         customerName, customerEmail,
-        orderId: order?.id || pagarmeResult.id,
+        orderId: order?.id || mpResult.id,
       }).catch(e => console.error('Post-purchase emails failed (non-fatal):', e));
 
       // Upsell é exclusivo do produto da home (Luminária Solar) — mesma regra do redirect em tempo real
@@ -331,10 +340,10 @@ export default async function handler(req, res) {
       success:         true,
       status:          paymentStatus,
       error:           rejectionReason,
-      id:              charge?.id || pagarmeResult.id,
+      id:              mpResult.id,
       orderId:         order?.id || null,
       qr_code:         isPix ? qrCode : null,
-      qr_code_url:     isPix ? qrCodeUrl : null,
+      qr_code_base64:  isPix ? qrCodeBase64 : null,
     });
 
   } catch (err) {

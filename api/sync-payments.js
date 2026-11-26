@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyPaymentApproved, schedulePostPurchaseEmails } from '../lib/send-notification.js';
 import { PAGARME_BASE, pagarmeAuthHeader, mapChargeStatus } from '../lib/pagarme.js';
+import { MP_BASE, mpAuthHeader, mapPaymentStatus } from '../lib/mercadopago.js';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -57,8 +58,17 @@ export default async function handler(req, res) {
             const pbStatus = d.charges?.[0]?.status || d.qr_codes?.[0]?.status || d.status;
             newStatus = PB_STATUS_MAP[pbStatus] || null;
           }
+        } else if (/^\d+$/.test(String(pid))) {
+          // Mercado Pago (payment IDs são só dígitos)
+          const r = await fetch(`${MP_BASE}/v1/payments/${pid}`, {
+            headers: mpAuthHeader(),
+          });
+          if (r.ok) {
+            const d = await r.json();
+            newStatus = mapPaymentStatus(d.status);
+          }
         } else {
-          // Pagar.me/Stone (charge IDs no formato ch_...)
+          // Pagar.me/Stone (charge IDs no formato ch_...) — pedidos antigos
           const r = await fetch(`${PAGARME_BASE}/charges/${pid}`, {
             headers: pagarmeAuthHeader(),
           });
