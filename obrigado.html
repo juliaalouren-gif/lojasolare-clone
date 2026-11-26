@@ -87,12 +87,22 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 6px;
+            gap: 8px;
             margin-bottom: 8px;
-            font-size: 11px;
+            font-size: 13px;
             color: #6b7280;
         }
-        .mp-seal img { height: 18px; }
+        .mp-seal img { height: 34px; }
+        .mp-wordmark {
+            display: inline-flex;
+            flex-direction: column;
+            line-height: 1.05;
+            font-weight: 800;
+            font-size: 15px;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        .mp-wordmark span:first-child { color: #2D3277; }
+        .mp-wordmark span:last-child { color: #00AEEF; }
 
         /* ── EXPIRED ── */
         .pix-expired-msg {
@@ -132,7 +142,8 @@
         <!-- MP Seal -->
         <div class="mp-seal">
             <span>Pagamento processado por</span>
-            <img src="https://img.icons8.com/color/48/000000/mercado-pago.png" alt="Mercado Pago" style="height:32px;vertical-align:middle;margin-left:6px;">
+            <img src="https://img.icons8.com/color/96/000000/mercado-pago.png" alt="">
+            <span class="mp-wordmark"><span>mercado</span><span>pago</span></span>
         </div>
 
         <!-- Expired Message -->
